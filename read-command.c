@@ -45,7 +45,9 @@ get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t
     buff[pos] = c;
     pos++;
   }
+  pos -= 1; //CHANGED (MARKUS) ... BUFFER LENGTH WAS 1 TOO LONG
   *buflen = pos;
+  printf("%zd\n", pos);
   return buff;
 }
 
@@ -72,6 +74,7 @@ make_command_stream (int (*get_next_byte) (void *),
   //cycles thru input string
   for (i = 0; i < bufflen; i++) {
     char c = inputString[i];
+    printf ("%zd\n", i);
     switch(c)
       {
       case ' ':
