@@ -1,1 +1,2 @@
-lsaaaaaa || v_9 9 |a && b;
+a && b;
+b ^ c;
