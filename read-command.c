@@ -13,6 +13,20 @@
 /* FIXME: Define the type 'struct command_stream' here.  This should
    complete the incomplete type declaration in command.h.  */
 
+//defining struct command_streamas TA specified...
+struct commandNode{
+  struct command* command; //forms the root of the tree
+  struct command* next;
+};
+
+typedef struct command_stream{
+  struct commandNode* head;
+  struct commandNode* tail;
+  struct commandNode* cursor;
+}command_stream;
+
+//finished TA's given definition
+
 char*
 get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen)
 {
