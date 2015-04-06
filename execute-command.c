@@ -21,4 +21,5 @@ execute_command (command_t c, bool time_travel)
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */
   error (1, 0, "command execution not yet implemented");
+  if (c || time_travel) {} // TODO: So the compiler doesn't flip out
 }
