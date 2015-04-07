@@ -10,6 +10,30 @@ enum command_type
     SUBSHELL_COMMAND,    // ( A )
   };
 
+enum token_type
+{
+  AND,
+  OR,
+  GREATER_THAN,
+  LESS_THAN,
+  PIPE,
+  SEMICOLON,
+  NEWLINE,
+  LEFT_PARENTHESIS,
+  RIGHT_PARENTHESIS,
+  WORD_TOKEN,
+  UNKNOWN_TOKEN,
+};
+
+struct token
+{
+  enum token_type type;
+  int line_num;
+  char* token_word;
+};
+
+
+
 // Data associated with a command.
 struct command
 {

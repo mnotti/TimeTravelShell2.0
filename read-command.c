@@ -1,11 +1,12 @@
 // UCLA CS 111 Lab 1 command reading
-// notti baker
 #include "command.h"
 #include "command-internals.h"
+#include "alloc.h"
 
 #include <error.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include <ctype.h>
 
@@ -29,18 +30,51 @@ typedef struct command_stream{
 
 //finished TA's given definition
 
+int
+is_valid_word_char(char c)
+{
+	if (isalpha(c) || isdigit(c))
+		return 1;
+	switch(c)
+	{
+		case '!':
+		case '%':
+		case '+':
+		case ',':
+		case '-':
+		case '.':
+		case '/':
+		case ':':
+		case '@':
+		case '^':
+		case '_':
+			return 1;
+		default:
+			return 0;
+	}
+}
+
+void
+tokenize(char* string, size_t len)
+{
+  //token_arr = checked_alloc;
+	if (*string || len) {} //TODO: FIX
+}
+
+
+// Get the string buffer from the input
 char*
 get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen)
 {
   char c;
   size_t pos = 0;
   size_t blen = 512;
-  char* buff = malloc(blen);
+  char* buff =  checked_malloc(blen);
 
   while (( c = get_next_byte(get_next_byte_arguement)) != EOF) {
+    // Reallocate memory if needed
     if (pos >= blen) {
-      blen *= 2;
-      buff = realloc(buff, blen);
+      buff = checked_grow_alloc(buff, &blen);
     }
     buff[pos] = c;
     pos++;
