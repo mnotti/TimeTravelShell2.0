@@ -29,6 +29,14 @@ typedef struct command_stream{
 
 //finished TA's given definition
 
+//screwing around with Stacks and shit
+struct stackNode{
+	struct command* command;
+	struct stackNode* next;
+};
+
+
+
 char*
 get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen)
 {
@@ -65,6 +73,16 @@ make_command_stream (int (*get_next_byte) (void *),
   size_t bufflen = 0;
   char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
   size_t i;
+
+  //allocating stacks
+  struct stackNode* rootOpStack;	//operator stack
+  rootOpStack = (struct stackNode*) malloc(sizeof(struct stackNode));
+  rootOpStack->next = NULL;
+
+  struct stackNode* rootComStack;	//command stack
+  rootComStack = (struct stackNode*) malloc(sizeof(struct stackNode));
+  rootComStack->next = NULL;
+
 
   //prints input string for reference
   for (i = 0; i < bufflen; i++) {
