@@ -49,6 +49,7 @@ get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t
   *buflen = pos;
   printf("%zd\n", pos);
   return buff;
+  
 }
 
 
