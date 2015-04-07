@@ -31,6 +31,13 @@ typedef struct command_stream{
 //finished TA's given definition
 
 
+//screwing around with Stacks and shit
+struct stackNode{
+	struct command* command;
+	struct stackNode* next;
+	struct stackNode* prev;
+};
+
 
 int
 is_valid_word_char(char c)
@@ -64,13 +71,6 @@ tokenize(char* string, size_t len)
 }
 
 
-//screwing around with Stacks and shit
-struct stackNode{
-	struct command* command;
-	struct stackNode* next;
-};
-
-
 // Get the string buffer from the input
 char*
 get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen)
@@ -88,7 +88,6 @@ get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t
     buff[pos] = c;
     pos++;
   }
-  pos -= 1; //CHANGED (MARKUS) ... BUFFER LENGTH WAS 1 TOO LONG
   *buflen = pos;
   printf("%zd\n", pos);
   return buff;
@@ -167,6 +166,9 @@ make_command_stream (int (*get_next_byte) (void *),
 	    i++;
 	  }
 	break;
+	case '\n':
+		printf("endline\n");
+		break;
       default:
         if (isalpha(c))
 	  {
