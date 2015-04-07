@@ -30,6 +30,8 @@ typedef struct command_stream{
 
 //finished TA's given definition
 
+
+
 int
 is_valid_word_char(char c)
 {
@@ -60,6 +62,13 @@ tokenize(char* string, size_t len)
   //token_arr = checked_alloc;
 	if (*string || len) {} //TODO: FIX
 }
+
+
+//screwing around with Stacks and shit
+struct stackNode{
+	struct command* command;
+	struct stackNode* next;
+};
 
 
 // Get the string buffer from the input
@@ -99,6 +108,16 @@ make_command_stream (int (*get_next_byte) (void *),
   size_t bufflen = 0;
   char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
   size_t i;
+
+  //allocating stacks
+  struct stackNode* rootOpStack;	//operator stack
+  rootOpStack = (struct stackNode*) malloc(sizeof(struct stackNode));
+  rootOpStack->next = NULL;
+
+  struct stackNode* rootComStack;	//command stack
+  rootComStack = (struct stackNode*) malloc(sizeof(struct stackNode));
+  rootComStack->next = NULL;
+
 
   //prints input string for reference
   for (i = 0; i < bufflen; i++) {
