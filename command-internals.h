@@ -25,12 +25,25 @@ enum token_type
   UNKNOWN_TOKEN,
 };
 
+//added by kyyyyyle
 struct token
 {
   enum token_type type;
   int line_num;
   char* token_word;
 };
+
+//added by markusssssssss
+struct stackNode{
+  struct token* tok;       
+  struct stackNode* next;
+  struct stackNode* prev;
+};
+
+typedef struct stackList{
+  struct stackNode* head;
+  struct stackNode* tail;
+}stackList;
 
 
 

@@ -31,12 +31,80 @@ typedef struct command_stream{
 //finished TA's given definition
 
 
-//screwing around with Stacks and shit
-struct stackNode{
-	struct command* command;
-	struct stackNode* next;
-	struct stackNode* prev;
-};
+//all the stack ish
+void
+stackPush(stackList* stackPtr, struct token* data)
+{
+	printf("line num of token being pushed:%i\n", data->line_num);
+
+	//creates the node
+	struct stackNode* newNode = (struct stackNode*) malloc(sizeof(struct stackNode));
+    if(newNode == NULL)
+        printf("problem allocating memory for node\n");
+    newNode->tok = data;	//TODO: change to command* or token*
+    newNode->next = NULL;
+	//base case (Stack is empty)
+	if (stackPtr->tail == NULL)
+	{
+		printf("stack is empty (tail is null)\n");
+
+    	newNode->prev = NULL;
+
+    	stackPtr->head = newNode;
+    	stackPtr->tail = newNode;
+	}
+	//if stack is not empty
+	else
+	{
+		stackPtr->tail->next = newNode;
+		newNode->prev = stackPtr->tail;
+		stackPtr->tail = newNode;
+	}
+}
+
+//popfunction
+struct token*	//TODO: change to command* or token*
+stackPop(stackList* stackPtr)
+{
+	if (stackPtr->tail == NULL)
+		printf("error: tried popping empty stack\n");
+	else if (stackPtr->tail->prev == NULL)	
+	{
+		struct stackNode* temp = stackPtr->tail;
+		stackPtr->tail = NULL;
+		stackPtr->head = NULL;
+		struct token* tempTok = (temp->tok);	//TODO: change to command* or token*
+		free(temp);
+		return tempTok;	//TODO: change to command* or token*
+	}
+	else
+	{
+		struct stackNode* temp = stackPtr->tail;
+		stackPtr->tail = stackPtr->tail->prev;
+		stackPtr->tail->next = NULL;
+		struct token* tempTok = (temp->tok);	//TODO: change to command* or token*
+		free(temp);
+		return tempTok;
+	}
+	return NULL;
+}
+
+void
+displayDataFromTopOfStack(stackList* stackPtr)
+{
+	printf("top of stack begins now...\n");
+	struct stackNode* it = stackPtr->tail;
+	while (it != NULL)
+	{
+		printf("line number of token = %i\n", it->tok->line_num);	//prints line number to see if token is properly stored in list
+		it = it->prev;
+	}
+	printf("bottom of stack ^^^\n");
+}
+
+
+
+
 
 
 int
@@ -109,13 +177,18 @@ make_command_stream (int (*get_next_byte) (void *),
   size_t i;
 
   //allocating stacks
-  struct stackNode* rootOpStack;	//operator stack
-  rootOpStack = (struct stackNode*) malloc(sizeof(struct stackNode));
-  rootOpStack->next = NULL;
+  stackList opStack;
+  opStack.head = NULL;
+  opStack.tail = NULL;
 
-  struct stackNode* rootComStack;	//command stack
-  rootComStack = (struct stackNode*) malloc(sizeof(struct stackNode));
-  rootComStack->next = NULL;
+  stackList comStack;		
+  comStack.head = NULL;
+  comStack.tail = NULL;
+
+  struct token token1;
+  stackPush(&opStack, &token1);	//TODO: so compiler won't complain about unused stack vars
+  stackPush(&comStack, &token1);
+
 
 
   //prints input string for reference
@@ -224,3 +297,30 @@ read_command_stream (command_stream_t s)
 
   if (s) {} //TODO: So the compiler doesn't flip out
 }
+
+
+
+  		////////////////////////////////////
+  		//STACK TESTING AND SAMPLE USAGE
+  		/////////////////////////////////////
+  		//testing stack
+  		/*struct token token1;
+  		token1.line_num = 1;
+
+  		struct token token2;
+  		token2.line_num = 2;
+
+  		struct token token3;
+  		token3.line_num = 3;
+
+  		stackPush(&opStack, &token1);
+		stackPush(&opStack, &token2);
+		stackPush(&opStack, &token3);
+
+		displayDataFromTopOfStack(&opStack);	//prints line nums from tokens from top to bottom of stack
+		struct token* poppedToken = stackPop(&opStack);		//TODO: change to command* or token*
+		displayDataFromTopOfStack(&opStack);
+
+		printf("popped token's line = %i\n", poppedToken->line_num);	
+		*/
+		////////////////////////////////////
