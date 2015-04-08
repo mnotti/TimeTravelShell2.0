@@ -41,7 +41,7 @@ stackPush(stackList* stackPtr, struct token* data)
 	struct stackNode* newNode = (struct stackNode*) malloc(sizeof(struct stackNode));
     if(newNode == NULL)
         printf("problem allocating memory for node\n");
-    newNode->tok = data;	//TODO: change to command* or token*
+    newNode->tok = data;	
     newNode->next = NULL;
 	//base case (Stack is empty)
 	if (stackPtr->tail == NULL)
@@ -63,7 +63,7 @@ stackPush(stackList* stackPtr, struct token* data)
 }
 
 //popfunction
-struct token*	//TODO: change to command* or token*
+struct token*	
 stackPop(stackList* stackPtr)
 {
 	if (stackPtr->tail == NULL)
@@ -73,18 +73,30 @@ stackPop(stackList* stackPtr)
 		struct stackNode* temp = stackPtr->tail;
 		stackPtr->tail = NULL;
 		stackPtr->head = NULL;
-		struct token* tempTok = (temp->tok);	//TODO: change to command* or token*
+		struct token* tempTok = (temp->tok);	
 		free(temp);
-		return tempTok;	//TODO: change to command* or token*
+		return tempTok;	
 	}
 	else
 	{
 		struct stackNode* temp = stackPtr->tail;
 		stackPtr->tail = stackPtr->tail->prev;
 		stackPtr->tail->next = NULL;
-		struct token* tempTok = (temp->tok);	//TODO: change to command* or token*
+		struct token* tempTok = (temp->tok);	
 		free(temp);
 		return tempTok;
+	}
+	return NULL;
+}
+
+struct token*	
+stackTop(stackList* stackPtr)
+{
+	if (stackPtr->tail == NULL)
+		printf("stack is empty\n");
+	else
+	{
+		return (stackPtr->tail->tok);
 	}
 	return NULL;
 }
