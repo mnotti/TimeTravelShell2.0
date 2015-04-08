@@ -74,6 +74,95 @@ print_token_type(token_t t)
 	}
 }
 
+
+//all the stack ish
+void
+stackPush(stackList* stackPtr, struct token* data)
+{
+	printf("line num of token being pushed:%i\n", data->line_num);
+
+	//creates the node
+	struct stackNode* newNode = (struct stackNode*) malloc(sizeof(struct stackNode));
+    if(newNode == NULL)
+        printf("problem allocating memory for node\n");
+    newNode->tok = data;	
+    newNode->next = NULL;
+	//base case (Stack is empty)
+	if (stackPtr->tail == NULL)
+	{
+		printf("stack is empty (tail is null)\n");
+
+    	newNode->prev = NULL;
+
+    	stackPtr->head = newNode;
+    	stackPtr->tail = newNode;
+	}
+	//if stack is not empty
+	else
+	{
+		stackPtr->tail->next = newNode;
+		newNode->prev = stackPtr->tail;
+		stackPtr->tail = newNode;
+	}
+}
+
+//popfunction
+struct token*	
+stackPop(stackList* stackPtr)
+{
+	if (stackPtr->tail == NULL)
+		printf("error: tried popping empty stack\n");
+	else if (stackPtr->tail->prev == NULL)	
+	{
+		struct stackNode* temp = stackPtr->tail;
+		stackPtr->tail = NULL;
+		stackPtr->head = NULL;
+		struct token* tempTok = (temp->tok);	
+		free(temp);
+		return tempTok;	
+	}
+	else
+	{
+		struct stackNode* temp = stackPtr->tail;
+		stackPtr->tail = stackPtr->tail->prev;
+		stackPtr->tail->next = NULL;
+		struct token* tempTok = (temp->tok);	
+		free(temp);
+		return tempTok;
+	}
+	return NULL;
+}
+
+struct token*	
+stackTop(stackList* stackPtr)
+{
+	if (stackPtr->tail == NULL)
+		printf("stack is empty\n");
+	else
+	{
+		return (stackPtr->tail->tok);
+	}
+	return NULL;
+}
+
+void
+displayDataFromTopOfStack(stackList* stackPtr)
+{
+	printf("top of stack begins now...\n");
+	struct stackNode* it = stackPtr->tail;
+	while (it != NULL)
+	{
+		printf("line number of token = %i\n", it->tok->line_num);	//prints line number to see if token is properly stored in list
+		it = it->prev;
+	}
+	printf("bottom of stack ^^^\n");
+}
+
+
+
+
+
+
 int
 is_valid_word_char(char c)
 {
@@ -267,6 +356,7 @@ get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t*
 	buff[pos] = c;
 	pos++;
   }
+
   //pos -= 1; //CHANGED (MARKUS) ... BUFFER LENGTH WAS 1 TOO LONG // CHANGED (KYLE) ... NO IT WASN'T
   *buflen = pos;
   printf("%zd\n", pos);
@@ -288,6 +378,21 @@ make_command_stream (int (*get_next_byte) (void *),
   char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
   size_t i;
 
+  //allocating stacks
+  stackList opStack;
+  opStack.head = NULL;
+  opStack.tail = NULL;
+
+  stackList comStack;		
+  comStack.head = NULL;
+  comStack.tail = NULL;
+
+  struct token token1;
+  stackPush(&opStack, &token1);	//TODO: so compiler won't complain about unused stack vars
+  stackPush(&comStack, &token1);
+
+
+
   //prints input string for reference
   for (i = 0; i < bufflen; i++) {
 	printf("%c", inputString[i]);
@@ -305,7 +410,7 @@ make_command_stream (int (*get_next_byte) (void *),
   }
   
   printf("%i",(int)token_array_size);
- error (1, 0, "command reading not yet implemented");
+ 	error (1, 0, "command reading not yet implemented");
   return 0;
 }
 
@@ -318,3 +423,30 @@ read_command_stream (command_stream_t s)
 
   if (s) {} //TODO: So the compiler doesn't flip out
 }
+
+
+
+  		////////////////////////////////////
+  		//STACK TESTING AND SAMPLE USAGE
+  		/////////////////////////////////////
+  		//testing stack
+  		/*struct token token1;
+  		token1.line_num = 1;
+
+  		struct token token2;
+  		token2.line_num = 2;
+
+  		struct token token3;
+  		token3.line_num = 3;
+
+  		stackPush(&opStack, &token1);
+		stackPush(&opStack, &token2);
+		stackPush(&opStack, &token3);
+
+		displayDataFromTopOfStack(&opStack);	//prints line nums from tokens from top to bottom of stack
+		struct token* poppedToken = stackPop(&opStack);		//TODO: change to command* or token*
+		displayDataFromTopOfStack(&opStack);
+
+		printf("popped token's line = %i\n", poppedToken->line_num);	
+		*/
+		////////////////////////////////////
