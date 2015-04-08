@@ -7,8 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
-#include <ctype.h>
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
@@ -30,7 +30,49 @@ typedef struct command_stream{
 
 //finished TA's given definition
 
-
+void
+print_token_type(token_t t)
+{
+	switch(t.type)
+	{
+		case AND:
+			printf("AND\n");
+			break;
+		case OR:
+			printf("OR\n");
+			break;
+		case GREATER_THAN:
+			printf("GREATER GREATER_THAN\n");
+			break;
+		case LESS_THAN:
+			printf("LESS THAN\n");
+			break;
+		case PIPE:
+			printf("PIPE\n");
+			break;
+		case SEMICOLON:
+			printf("SEMICOLON\n");
+			break;
+		case NEWLINE:
+		        printf("NEWLINE\n");
+			break;
+		case LEFT_PARENTHESIS:
+			printf("LEFT_PARENTHESIS\n");
+			break;
+		case RIGHT_PARENTHESIS:
+			printf("RIGHT_PARENTHESIS\n");
+			break;
+		case WORD_TOKEN:
+			printf("WORD_TOKEN\n");
+			printf("%s \n", t.token_word);
+			break;
+		case UNKNOWN_TOKEN:
+			printf("UNKNOWN_TOKEN\n");
+			break;
+		default:
+			break;
+	}
+}
 
 int
 is_valid_word_char(char c)
@@ -56,24 +98,161 @@ is_valid_word_char(char c)
 	}
 }
 
-void
-tokenize(char* string, size_t len)
+/*
+enum token_type
+check_char_type(char c)
 {
-  //token_arr = checked_alloc;
-	if (*string || len) {} //TODO: FIX
+	if (isalpha(c) || isdigit(c))
+		return WORD_TOKEN;
+
 }
+*/
 
+// TODO: Lines not working, easy to implememnt, not sure if we need it though
+token_t*
+tokenize(char* string, size_t len, size_t *token_array_size)
+{
+	size_t token_buff_max = 20; // TODO: Change buff size
+	size_t token_buff_max_bytes = token_buff_max * sizeof(token_t);
+	token_t *token_buff = checked_malloc(token_buff_max_bytes);
+	size_t num_tokens = 0;
+	size_t pos = 0;
+	int line = 0;
+	char token_char;
+	while (pos < len)
+	{
+		token_char = string[pos];
+		if (is_valid_word_char(token_char))
+		{
+			int start = pos;
+			while (is_valid_word_char(token_char) && pos < len)
+			{
+			  pos++;
+			  token_char = string[pos];
+			}
+			int token_word_size = pos - start;
+			token_buff[num_tokens].token_word = checked_malloc((sizeof(char) * token_word_size) + sizeof(char));
+			int count = 0;
+				while (start < (int)pos)
+			{
+			  token_buff[num_tokens].token_word[count] = string[start];
+			  count++;
+			  start++;
+			}
+			token_buff[num_tokens].token_word[count] = '\0';
+			token_buff[num_tokens].type = WORD_TOKEN;
+			token_buff[num_tokens].line_num = line;
+			num_tokens++;
+		}
+		else if (token_char == ' ' || token_char == '\t')
+			pos++;
+		else
+		{
+			switch(token_char)
+			{
+				case '\n':
+					token_buff[num_tokens].type = NEWLINE;
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					pos++;
+					break;
+				case ';':
+					token_buff[num_tokens].type = SEMICOLON;
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					pos++;
+					break;
+				case '>':
+					token_buff[num_tokens].type = GREATER_THAN;
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					pos++;
+					break;
+				case '<':
+					token_buff[num_tokens].type = LESS_THAN;
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					pos++;
+					break;
+				case '(':
+					token_buff[num_tokens].type = RIGHT_PARENTHESIS;
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					pos++;
+					break;
+				case ')':
+					token_buff[num_tokens].type = RIGHT_PARENTHESIS;
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					pos++;
+					break;
+				case '|':
+					if (pos+1 >= len)
+					{
+						token_buff[num_tokens].type = PIPE;
+						pos++;
+					}
+					else
+					{
+						if (string[pos+1] == '|')
+						{
+							token_buff[num_tokens].type = OR;
+							pos += 2;
+						}
+						else
+						{
+							token_buff[num_tokens].type = PIPE;
+							pos++;
+						}
+					}
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					break;
+				case '&':
+					if (pos+1 >= len)
+					{
+						token_buff[num_tokens].type = UNKNOWN_TOKEN;
+						pos++;
+					}
+					else
+					{
+						if (string[pos+1] == '&')
+						{
+							token_buff[num_tokens].type = AND;
+							pos += 2;
+						}
+						else
+						{
+							token_buff[num_tokens].type = UNKNOWN_TOKEN;
+							pos++;
+						}
+					}
+					token_buff[num_tokens].token_word = NULL;
+					num_tokens++;
+					break;
+				default:
+					token_buff[num_tokens].type = UNKNOWN_TOKEN;
+					num_tokens++;
+					pos++;
+					break;
+			}
+		}
+		if (num_tokens >= token_buff_max)
+		{
+		  token_buff = checked_grow_alloc(token_buff, &token_buff_max_bytes);
+		  token_buff_max = token_buff_max_bytes/(sizeof(token_t));
+		}
+	}
 
-//screwing around with Stacks and shit
-struct stackNode{
-	struct command* command;
-	struct stackNode* next;
-};
+	// TODO: Handle if the buffer is empty
+	*token_array_size = num_tokens;
+	return token_buff;
+}
 
 
 // Get the string buffer from the input
 char*
-get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen)
+get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen)
 {
   char c;
   size_t pos = 0;
@@ -81,14 +260,14 @@ get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t
   char* buff =  checked_malloc(blen);
 
   while (( c = get_next_byte(get_next_byte_arguement)) != EOF) {
-    // Reallocate memory if needed
-    if (pos >= blen) {
-      buff = checked_grow_alloc(buff, &blen);
-    }
-    buff[pos] = c;
-    pos++;
+	// Reallocate memory if needed
+	if (pos >= blen) {
+	  buff = checked_grow_alloc(buff, &blen);
+	}
+	buff[pos] = c;
+	pos++;
   }
-  pos -= 1; //CHANGED (MARKUS) ... BUFFER LENGTH WAS 1 TOO LONG
+  //pos -= 1; //CHANGED (MARKUS) ... BUFFER LENGTH WAS 1 TOO LONG // CHANGED (KYLE) ... NO IT WASN'T
   *buflen = pos;
   printf("%zd\n", pos);
   return buff;
@@ -98,117 +277,34 @@ get_string (void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t
 
 command_stream_t
 make_command_stream (int (*get_next_byte) (void *),
-		     void *get_next_byte_argument)
+			 void *get_next_byte_argument)
 {
   /* FIXME: Replace this with your implementation.  You may need to
-     add auxiliary functions and otherwise modify the source code.
-     You can also use external functions defined in the GNU C Library.  */
+	 add auxiliary functions and otherwise modify the source code.
+	 You can also use external functions defined in the GNU C Library.  */
   
   
   size_t bufflen = 0;
   char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
   size_t i;
 
-  //allocating stacks
-  struct stackNode* rootOpStack;	//operator stack
-  rootOpStack = (struct stackNode*) malloc(sizeof(struct stackNode));
-  rootOpStack->next = NULL;
-
-  struct stackNode* rootComStack;	//command stack
-  rootComStack = (struct stackNode*) malloc(sizeof(struct stackNode));
-  rootComStack->next = NULL;
-
-
   //prints input string for reference
   for (i = 0; i < bufflen; i++) {
-    printf("%c", inputString[i]);
+	printf("%c", inputString[i]);
   }
   printf("\n");
 
-  //cycles thru input string
-  for (i = 0; i < bufflen; i++) {
-    char c = inputString[i];
-    printf ("%zd\n", i);
-    switch(c)
-      {
-      case ' ':
-	printf("space!\n");
-	break;
-      case ';':
-	printf("semi-colon (END_OF_LINE\n");
-	break;
-      case '(':
-	printf("open-parenthesis (BEGIN_SUBSHELL\n");
-	break;
-      case ')':
-	printf("close-parenthesis (END_SUBSHELL\n");
-	break;
-      case '<':
-	printf("less than (INPUT\n");
-	break;
-      case '>':
-	printf("greater than (OUTPUT\n");
-	break;
-      case '|':
-	if (inputString[i+1] == '|')
-	  {
-	    printf("double bars(OR_COMMAND)\n");
-	    i++;
-	  }
-	else
-	  {
-	    printf("PIPE!\n");
-	  }
-	break;
-      case '&':
-	if (inputString[i+1] == '&')
-	  {
-	    printf("double ampersands(AND_COMMAND)\n");
-	    i++;
-	  }
-	break;
-      default:
-        if (isalpha(c))
-	  {
-	    // printf("it's a letter\n");
-	    int tempBufLen = 12;
-	    char *tempBuf = malloc( sizeof(char) * (12) );  //allocate buffer for each individual word made of digits,
-	    //letters, and _s
-	    int j = 0;
-	    while (isalpha(inputString[i]) || isdigit(inputString[i]) || inputString[i] == '_')
-	      {
-		if (tempBufLen == j)
-		  {
-		    tempBuf = realloc(tempBuf,  sizeof(char) * (tempBufLen * 2));
-		    tempBufLen *= 2;
-		  }
-		tempBuf[j] = inputString[i];
-		j++;
-		i++;
-	      }
-	    int k;
-	    for (k = 0; k < tempBufLen; k++)
-	      {
-		char d = tempBuf[k];
-		printf("%c", d);
-	      }
-	    printf("\n");
-	    free(tempBuf);
-	    i--;
-	  }
-	else if (isdigit(c))
-	  {
-	    printf("it's a digit\n");
-	  }
-	else
-	  {
-	    printf("%zd\n", i);
-	    printf("something else?\n");//TODO: this prints after the entire array has been traversed (bad access?)
-	  }
-	break;
-      }
-  }
+  //  ERROR TESTING FOR TOKENIZING WORDS
+  size_t token_array_size;
+  token_t *t = tokenize(inputString, bufflen, &token_array_size);
 
+  int j;
+  for (j = 0; j < (int)token_array_size; j++)
+  {
+  	print_token_type(t[j]);
+  }
+  
+  printf("%i",(int)token_array_size);
  error (1, 0, "command reading not yet implemented");
   return 0;
 }
