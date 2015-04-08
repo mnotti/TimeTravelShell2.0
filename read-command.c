@@ -216,7 +216,7 @@ displayDataFromTopOfStack(stackListOp* stackPtr)
 		printf("line number of token = %i\n", it->tok->line_num);	//prints line number to see if token is properly stored in list
 		it = it->prev;
 	}
-	printf("bottom of stack ^^^\n");
+	printf("bottom of stack ^^^\n\n");
 }
 
 void
@@ -227,9 +227,19 @@ displayDataFromTopOfStackCom(stackListCom* stackPtr)
 	while (it != NULL)
 	{
 		printf("status of command = %i\n", it->com->status);	//prints line number to see if token is properly stored in list
+		
+		printf("words of command = ");
+		int j = 0;
+		while (it->com->u.word[j][0] != '\0')			//prints all words in the stacked commands
+		{
+			printf("%s ", it->com->u.word[j]);
+			j++;
+		}
+		printf("\n");
+
 		it = it->prev;
 	}
-	printf("bottom of stack ^^^\n");
+	printf("bottom of stack ^^^\n\n");
 }
 
 
@@ -457,17 +467,49 @@ handleTokenBuf(struct token* tok, size_t len)
   		stackPush(&opStack, &tok[i]);
   		printf("opStack\n");
   		displayDataFromTopOfStack(&opStack);
+  		i++;
   	}
   	else	//TODO: complete implementation of creating command
   	{
+  		int wordCount = 0;
+
   		struct command *newCommand = malloc(sizeof(struct command));
-  		newCommand->status = tok[i].line_num;  
+  		newCommand->status = tok[i].line_num; //TODO: not true, just used for testing purposes
+  		newCommand->type = SIMPLE_COMMAND;
+
+  		int wrdsAlctd = 4;
+  		newCommand->u.word = malloc( sizeof(char*) * (4) );	//TODO: add reallocation if too big
+  		newCommand->u.word[wordCount] = tok[i].token_word;
+
+  		i++;
+  		wordCount++;
+
+  		//now cycle thru next tokens until reaching something not a word token
+  		while ((i < len) && (tok[i].type == WORD_TOKEN))	//TODO: account for inputs/outputs/status when creating commands
+  		{
+  			//check if enough space in words
+  			//if necessary, realloc
+  			if (wordCount >= wrdsAlctd)
+  			{
+  				newCommand->u.word = realloc(newCommand->u.word,  sizeof(char*) * (wrdsAlctd + 4));
+  				wrdsAlctd += 4;
+  			}
+
+  			//add word to current command
+  			newCommand->u.word[wordCount] = tok[i].token_word;
+  			i++;
+  			wordCount++;
+  		}
+  		newCommand->u.word[wordCount] = "\0";
   		stackPushCom(&comStack, newCommand); 
   		printf("comStack:\n");
   		displayDataFromTopOfStackCom(&comStack);
+
+
+
   	}
-  	i++;
   }
+
 
 }
 
@@ -496,17 +538,42 @@ make_command_stream (int (*get_next_byte) (void *),
   struct token token1;
   stackPush(&opStack, &token1);	//TODO: so compiler won't complain about unused stack vars
   stackPush(&comStack, &token1);*/
-  struct token tokArray[5];
-  size_t length = 5;
+
+  //TODO: remove this token array (here for testing purposes)
+  /*struct token tokArray[9];
+  size_t length = 9;
   tokArray[0].line_num = 0;
+  tokArray[0].type = LEFT_PARENTHESIS;
   tokArray[1].line_num = 1;
   tokArray[1].type = WORD_TOKEN;
+  tokArray[1].token_word = "apple";
   tokArray[2].line_num = 2;
+  tokArray[2].type = RIGHT_PARENTHESIS;
   tokArray[3].line_num = 3;
   tokArray[3].type = WORD_TOKEN;
-  tokArray[4].line_num = 4;
+  tokArray[3].token_word = "berry";
 
-  handleTokenBuf(tokArray, length);
+  tokArray[4].line_num = 4;
+  tokArray[4].type = WORD_TOKEN;
+  tokArray[4].token_word = "bush";
+
+  tokArray[5].line_num = 5;
+  tokArray[5].type = WORD_TOKEN;
+  tokArray[5].token_word = "cake";
+
+  tokArray[6].line_num = 6;
+  tokArray[6].type = WORD_TOKEN;
+  tokArray[6].token_word = "decrepit";
+
+  tokArray[7].line_num = 7;
+  tokArray[7].type = WORD_TOKEN;
+  tokArray[7].token_word = "egregious";
+
+  tokArray[8].line_num = 8;
+  tokArray[8].type = WORD_TOKEN;
+  tokArray[8].token_word = "flippant";
+
+  handleTokenBuf(tokArray, length);*/
 
   /*stackListCom comStack;		
   comStack.head = NULL;
@@ -528,6 +595,7 @@ make_command_stream (int (*get_next_byte) (void *),
   char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
   size_t i;
 
+
   if(bufflen) {}
   if(i) {}
   if(inputString) {}
@@ -545,6 +613,9 @@ make_command_stream (int (*get_next_byte) (void *),
   //  ERROR TESTING FOR TOKENIZING WORDS TODO:uncomment?
   size_t token_array_size;
   token_t *t = tokenize(inputString, bufflen, &token_array_size);
+
+  handleTokenBuf(t, token_array_size);
+
 
 
 
