@@ -154,6 +154,33 @@ stackPop(stackListOp* stackPtr)
 	return NULL;
 }
 
+//TODO: not tested
+struct command*	
+stackPopCom(stackListCom* stackPtr)
+{
+	if (stackPtr->tail == NULL)
+		printf("error: tried popping empty stack\n");
+	else if (stackPtr->tail->prev == NULL)	
+	{
+		struct stackNodeCom* temp = stackPtr->tail;
+		stackPtr->tail = NULL;
+		stackPtr->head = NULL;
+		struct command* tempCom = (temp->com);	
+		free(temp);
+		return tempCom;	
+	}
+	else
+	{
+		struct stackNodeCom* temp = stackPtr->tail;
+		stackPtr->tail = stackPtr->tail->prev;
+		stackPtr->tail->next = NULL;
+		struct command* tempCom = (temp->com);	
+		free(temp);
+		return tempCom;
+	}
+	return NULL;
+}
+
 struct token*	
 stackTop(stackListOp* stackPtr)
 {
@@ -162,6 +189,19 @@ stackTop(stackListOp* stackPtr)
 	else
 	{
 		return (stackPtr->tail->tok);
+	}
+	return NULL;
+}
+
+//Todo: TBT
+struct command*	
+stackTopCom(stackListCom* stackPtr)
+{
+	if (stackPtr->tail == NULL)
+		printf("stack is empty\n");
+	else
+	{
+		return (stackPtr->tail->com);
 	}
 	return NULL;
 }
@@ -405,9 +445,9 @@ handleTokenBuf(struct token* tok, size_t len)
   opStack.head = NULL;
   opStack.tail = NULL;
 
-  //stackListCom comStack;		
-  //comStack.head = NULL;
-//  comStack.tail = NULL;
+  stackListCom comStack;		
+  comStack.head = NULL;
+  comStack.tail = NULL;
 
   size_t i = 0;
   while(i < len)
@@ -415,12 +455,16 @@ handleTokenBuf(struct token* tok, size_t len)
   	if (tok[i].type != WORD_TOKEN)
   	{
   		stackPush(&opStack, &tok[i]);
+  		printf("opStack\n");
   		displayDataFromTopOfStack(&opStack);
   	}
-  	else
+  	else	//TODO: complete implementation of creating command
   	{
-  		//stackPush(&comStack, &tok[i]); //TODO: change to command stack
-  		//displayDataFromTopOfStack(&comStack);
+  		struct command *newCommand = malloc(sizeof(struct command));
+  		newCommand->status = tok[i].line_num;  
+  		stackPushCom(&comStack, newCommand); 
+  		printf("comStack:\n");
+  		displayDataFromTopOfStackCom(&comStack);
   	}
   	i++;
   }
@@ -464,7 +508,7 @@ make_command_stream (int (*get_next_byte) (void *),
 
   handleTokenBuf(tokArray, length);
 
-  stackListCom comStack;		
+  /*stackListCom comStack;		
   comStack.head = NULL;
   comStack.tail = NULL;
   struct command comArray[5];
@@ -476,7 +520,7 @@ make_command_stream (int (*get_next_byte) (void *),
   comArray[4].status = 4;
 
   stackPushCom(&comStack, &comArray[0]);
-  displayDataFromTopOfStackCom(&comStack);
+  displayDataFromTopOfStackCom(&comStack);*/
 
 
 
