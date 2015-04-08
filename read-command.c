@@ -17,16 +17,7 @@
    complete the incomplete type declaration in command.h.  */
 
 //defining struct command_streamas TA specified...
-struct commandNode{
-  struct command* command; //forms the root of the tree
-  struct command* next;
-};
 
-typedef struct command_stream{
-  struct commandNode* head;
-  struct commandNode* tail;
-  struct commandNode* cursor;
-}command_stream;
 
 //finished TA's given definition
 
@@ -77,12 +68,12 @@ print_token_type(token_t t)
 
 //all the stack ish
 void
-stackPush(stackList* stackPtr, struct token* data)
+stackPush(stackListOp* stackPtr, struct token* data)
 {
 	printf("line num of token being pushed:%i\n", data->line_num);
 
 	//creates the node
-	struct stackNode* newNode = (struct stackNode*) malloc(sizeof(struct stackNode));
+	struct stackNodeOp* newNode = (struct stackNodeOp*) malloc(sizeof(struct stackNodeOp));
     if(newNode == NULL)
         printf("problem allocating memory for node\n");
     newNode->tok = data;	
@@ -106,15 +97,45 @@ stackPush(stackList* stackPtr, struct token* data)
 	}
 }
 
+void
+stackPushCom(stackListCom* stackPtr, struct command* data)
+{
+	printf("int status of command being pushed:%i\n", data->status);
+
+	//creates the node
+	struct stackNodeCom* newNode = (struct stackNodeCom*) malloc(sizeof(struct stackNodeCom));
+    if(newNode == NULL)
+        printf("problem allocating memory for node\n");
+    newNode->com = data;	
+    newNode->next = NULL;
+	//base case (Stack is empty)
+	if (stackPtr->tail == NULL)
+	{
+		printf("stack is empty (tail is null)\n");
+
+    	newNode->prev = NULL;
+
+    	stackPtr->head = newNode;
+    	stackPtr->tail = newNode;
+	}
+	//if stack is not empty
+	else
+	{
+		stackPtr->tail->next = newNode;
+		newNode->prev = stackPtr->tail;
+		stackPtr->tail = newNode;
+	}
+}
+
 //popfunction
 struct token*	
-stackPop(stackList* stackPtr)
+stackPop(stackListOp* stackPtr)
 {
 	if (stackPtr->tail == NULL)
 		printf("error: tried popping empty stack\n");
 	else if (stackPtr->tail->prev == NULL)	
 	{
-		struct stackNode* temp = stackPtr->tail;
+		struct stackNodeOp* temp = stackPtr->tail;
 		stackPtr->tail = NULL;
 		stackPtr->head = NULL;
 		struct token* tempTok = (temp->tok);	
@@ -123,7 +144,7 @@ stackPop(stackList* stackPtr)
 	}
 	else
 	{
-		struct stackNode* temp = stackPtr->tail;
+		struct stackNodeOp* temp = stackPtr->tail;
 		stackPtr->tail = stackPtr->tail->prev;
 		stackPtr->tail->next = NULL;
 		struct token* tempTok = (temp->tok);	
@@ -134,7 +155,7 @@ stackPop(stackList* stackPtr)
 }
 
 struct token*	
-stackTop(stackList* stackPtr)
+stackTop(stackListOp* stackPtr)
 {
 	if (stackPtr->tail == NULL)
 		printf("stack is empty\n");
@@ -146,13 +167,26 @@ stackTop(stackList* stackPtr)
 }
 
 void
-displayDataFromTopOfStack(stackList* stackPtr)
+displayDataFromTopOfStack(stackListOp* stackPtr)
 {
 	printf("top of stack begins now...\n");
-	struct stackNode* it = stackPtr->tail;
+	struct stackNodeOp* it = stackPtr->tail;
 	while (it != NULL)
 	{
 		printf("line number of token = %i\n", it->tok->line_num);	//prints line number to see if token is properly stored in list
+		it = it->prev;
+	}
+	printf("bottom of stack ^^^\n");
+}
+
+void
+displayDataFromTopOfStackCom(stackListCom* stackPtr)
+{
+	printf("top of stack begins now...\n");
+	struct stackNodeCom* it = stackPtr->tail;
+	while (it != NULL)
+	{
+		printf("status of command = %i\n", it->com->status);	//prints line number to see if token is properly stored in list
 		it = it->prev;
 	}
 	printf("bottom of stack ^^^\n");
@@ -357,11 +391,40 @@ get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t*
 	pos++;
   }
 
-  //pos -= 1; //CHANGED (MARKUS) ... BUFFER LENGTH WAS 1 TOO LONG // CHANGED (KYLE) ... NO IT WASN'T
   *buflen = pos;
   printf("%zd\n", pos);
   return buff;
   
+}
+
+void
+handleTokenBuf(struct token* tok, size_t len)
+{
+	//allocating stacks
+  stackListOp opStack;
+  opStack.head = NULL;
+  opStack.tail = NULL;
+
+  //stackListCom comStack;		
+  //comStack.head = NULL;
+//  comStack.tail = NULL;
+
+  size_t i = 0;
+  while(i < len)
+  {
+  	if (tok[i].type != WORD_TOKEN)
+  	{
+  		stackPush(&opStack, &tok[i]);
+  		displayDataFromTopOfStack(&opStack);
+  	}
+  	else
+  	{
+  		//stackPush(&comStack, &tok[i]); //TODO: change to command stack
+  		//displayDataFromTopOfStack(&comStack);
+  	}
+  	i++;
+  }
+
 }
 
 
@@ -374,10 +437,9 @@ make_command_stream (int (*get_next_byte) (void *),
 	 You can also use external functions defined in the GNU C Library.  */
   
   
-  size_t bufflen = 0;
-  char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
-  size_t i;
 
+
+  /*
   //allocating stacks
   stackList opStack;
   opStack.head = NULL;
@@ -389,19 +451,151 @@ make_command_stream (int (*get_next_byte) (void *),
 
   struct token token1;
   stackPush(&opStack, &token1);	//TODO: so compiler won't complain about unused stack vars
-  stackPush(&comStack, &token1);
+  stackPush(&comStack, &token1);*/
+  struct token tokArray[5];
+  size_t length = 5;
+  tokArray[0].line_num = 0;
+  tokArray[1].line_num = 1;
+  tokArray[1].type = WORD_TOKEN;
+  tokArray[2].line_num = 2;
+  tokArray[3].line_num = 3;
+  tokArray[3].type = WORD_TOKEN;
+  tokArray[4].line_num = 4;
+
+  handleTokenBuf(tokArray, length);
+
+  stackListCom comStack;		
+  comStack.head = NULL;
+  comStack.tail = NULL;
+  struct command comArray[5];
+  //size_t length = 5;
+  comArray[0].status = 0;
+  comArray[1].status = 1;
+  comArray[2].status = 2;
+  comArray[3].status = 3;
+  comArray[4].status = 4;
+
+  stackPushCom(&comStack, &comArray[0]);
+  displayDataFromTopOfStackCom(&comStack);
 
 
 
+  size_t bufflen = 0;
+  char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
+  size_t i;
+
+  if(bufflen) {}
+  if(i) {}
+  if(inputString) {}
+
+
+  /////////////////////////////
+  //RIP MY SWITCH STATEMENT////
+  /////////////////////////////
   //prints input string for reference
   for (i = 0; i < bufflen; i++) {
 	printf("%c", inputString[i]);
   }
   printf("\n");
 
-  //  ERROR TESTING FOR TOKENIZING WORDS
+  //  ERROR TESTING FOR TOKENIZING WORDS TODO:uncomment?
   size_t token_array_size;
   token_t *t = tokenize(inputString, bufflen, &token_array_size);
+
+
+
+  /*for (i = 0; i < bufflen; i++) {
+    printf("%c", inputString[i]);
+  }
+  printf("\n");
+
+  //cycles thru input string
+  for (i = 0; i < bufflen; i++) {
+    char c = inputString[i];
+   // printf ("%zd\n", i);
+    switch(c)
+      {
+      case ' ':
+	printf("space!\n");
+	break;
+      case ';':
+	printf("semi-colon (END_OF_LINE\n");
+	break;
+      case '(':
+	printf("open-parenthesis (BEGIN_SUBSHELL\n");
+	break;
+      case ')':
+	printf("close-parenthesis (END_SUBSHELL\n");
+	break;
+      case '<':
+	printf("less than (INPUT\n");
+	break;
+      case '>':
+	printf("greater than (OUTPUT\n");
+	break;
+      case '|':
+	if (inputString[i+1] == '|')
+	  {
+	    printf("double bars(OR_COMMAND)\n");
+	    i++;
+	  }
+	else
+	  {
+	    printf("PIPE!\n");
+	  }
+	break;
+      case '&':
+	if (inputString[i+1] == '&')
+	  {
+	    printf("double ampersands(AND_COMMAND)\n");
+	    i++;
+	  }
+	break;
+	case '\n':
+		printf("endline\n");
+		break;
+      default:
+        if (isalpha(c))
+	  {
+	    // printf("it's a letter\n");
+	    int tempBufLen = 12;
+	    char *tempBuf = malloc( sizeof(char) * (12) );  //allocate buffer for each individual word made of digits,
+	    //letters, and _s
+	    int j = 0;
+	    while (isalpha(inputString[i]) || isdigit(inputString[i]) || inputString[i] == '_') // TODO: add the rest of the chars tht are considered part of a word
+	      {
+		if (tempBufLen == j)
+		  {
+		    tempBuf = realloc(tempBuf,  sizeof(char) * (tempBufLen * 2));
+		    tempBufLen *= 2;
+		  }
+		tempBuf[j] = inputString[i];
+		j++;
+		i++;
+	      }
+	    int k;
+	    for (k = 0; k < tempBufLen; k++)
+	      {
+		char d = tempBuf[k];
+		printf("%c", d);
+	      }
+	    printf("\n");
+	    free(tempBuf);
+	    i--;
+	  }
+	else if (isdigit(c))
+	  {
+	    printf("it's a digit\n");
+	  }
+	else
+	  {
+	    //printf("%zd\n", i);
+	    printf("something else?\n");//TODO: this prints after the entire array has been traversed (bad access?)
+	  }
+	break;
+      }
+  }*/
+      ////////////////////////
 
   int j;
   for (j = 0; j < (int)token_array_size; j++)
@@ -410,9 +604,24 @@ make_command_stream (int (*get_next_byte) (void *),
   }
   
   printf("%i",(int)token_array_size);
+
  	error (1, 0, "command reading not yet implemented");
   return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 command_t
 read_command_stream (command_stream_t s)

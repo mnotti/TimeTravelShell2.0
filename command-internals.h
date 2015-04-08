@@ -34,16 +34,27 @@ struct token
 };
 
 //added by markusssssssss
-struct stackNode{
+struct stackNodeOp{
   struct token* tok;       
-  struct stackNode* next;
-  struct stackNode* prev;
+  struct stackNodeOp* next;
+  struct stackNodeOp* prev;
 };
 
-typedef struct stackList{
-  struct stackNode* head;
-  struct stackNode* tail;
-}stackList;
+struct stackNodeCom{
+  struct command* com;       
+  struct stackNodeCom* next;
+  struct stackNodeCom* prev;
+};
+
+typedef struct stackListOp{
+  struct stackNodeOp* head;
+  struct stackNodeOp* tail;
+}stackListOp;
+
+typedef struct stackListCom{
+  struct stackNodeCom* head;
+  struct stackNodeCom* tail;
+}stackListCom;
 
 
 
@@ -71,3 +82,14 @@ struct command
     struct command *subshell_command;
   } u;
 };
+
+struct commandNode{
+  struct command* command; //forms the root of the tree
+  struct command* next;
+};
+
+typedef struct command_stream{
+  struct commandNode* head;
+  struct commandNode* tail;
+  struct commandNode* cursor;
+}command_stream;
