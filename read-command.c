@@ -20,7 +20,22 @@
 
 
 //finished TA's given definition
-
+/*
+int
+operator_precedence(token_t t)
+{
+	switch(t.type)
+	{
+		case PIPE:
+			return 2;
+		case AND:
+		case OR:
+			return 1;
+		case SEMICOLON:
+			return 0;
+	}
+}
+*/
 void
 print_token_type(token_t t)
 {
@@ -57,6 +72,9 @@ print_token_type(token_t t)
 			printf("WORD_TOKEN\n");
 			printf("%s \n", t.token_word);
 			break;
+		case COMMENT:
+			printf("COMMENT\n");
+			printf("%s \n", t.token_word);			
 		case UNKNOWN_TOKEN:
 			printf("UNKNOWN_TOKEN\n");
 			break;
@@ -295,13 +313,26 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 	while (pos < len)
 	{
 		token_char = string[pos];
-		if (is_valid_word_char(token_char))
+		if (is_valid_word_char(token_char) || token_char == '#')
 		{
 			int start = pos;
-			while (is_valid_word_char(token_char) && pos < len)
+			if (token_char != '#')
 			{
-			  pos++;
-			  token_char = string[pos];
+				token_buff[num_tokens].type = WORD_TOKEN;
+				while (is_valid_word_char(token_char) && pos < len)
+				{
+			  	pos++;
+			  	token_char = string[pos];
+				}
+			}
+			else
+			{
+				token_buff[num_tokens].type = COMMENT;
+				while (token_char != '\n' && pos < len)
+				{
+			  	pos++;
+			  	token_char = string[pos];
+				}
 			}
 			int token_word_size = pos - start;
 			token_buff[num_tokens].token_word = checked_malloc((sizeof(char) * token_word_size) + sizeof(char));
@@ -313,7 +344,6 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 			  start++;
 			}
 			token_buff[num_tokens].token_word[count] = '\0';
-			token_buff[num_tokens].type = WORD_TOKEN;
 			token_buff[num_tokens].line_num = line;
 			num_tokens++;
 		}

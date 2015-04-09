@@ -1,6 +1,6 @@
 a && b;
 b ^ c;
-a || b
+a || b #This is a comment
 c || d;
 adsaknsdlkasndlknsdlknsdalkns
 a ls 
