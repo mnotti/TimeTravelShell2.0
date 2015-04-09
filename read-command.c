@@ -20,7 +20,9 @@
 
 
 //finished TA's given definition
-/*
+
+
+// Higher precedence returns a higher number, invalid input returns -1
 int
 operator_precedence(token_t t)
 {
@@ -33,9 +35,11 @@ operator_precedence(token_t t)
 			return 1;
 		case SEMICOLON:
 			return 0;
+		default:
+			return -1;
 	}
 }
-*/
+
 void
 print_token_type(token_t t)
 {
@@ -74,7 +78,8 @@ print_token_type(token_t t)
 			break;
 		case COMMENT:
 			printf("COMMENT\n");
-			printf("%s \n", t.token_word);			
+			printf("%s \n", t.token_word);		
+			break;	
 		case UNKNOWN_TOKEN:
 			printf("UNKNOWN_TOKEN\n");
 			break;
@@ -626,9 +631,9 @@ make_command_stream (int (*get_next_byte) (void *),
   size_t i;
 
 
-  if(bufflen) {}
-  if(i) {}
-  if(inputString) {}
+  if(bufflen) {} //TODO: Fix
+  if(i) {}				// TODO: Fix
+  if(inputString) {}	//TODO: Fix
 
 
   /////////////////////////////
@@ -753,17 +758,6 @@ make_command_stream (int (*get_next_byte) (void *),
  	error (1, 0, "command reading not yet implemented");
   return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
 
 
 

@@ -28,6 +28,9 @@ void execute_command (command_t, bool);
    been executed.  Wait for the command, if it is not already finished.  */
 int command_status (command_t);
 
+// Returns the precidence of a operator, if its not valid it returns -1
+int operator_precedence(token_t t);
+
 // Debugging, prints token type
 void print_token_type(token_t t);
 
