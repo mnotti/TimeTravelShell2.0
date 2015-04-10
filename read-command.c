@@ -21,8 +21,13 @@
 
 //finished TA's given definition
 
+void displayDataFromTopOfStack(stackListOp* stackPtr);
+void displayDataFromTopOfStackCom(stackListCom* stackPtr);
 
-// Higher precedence returns a higher number, invalid input returns -1
+
+
+
+// Higher precedence returns a higher number, invalid input returns -1  //DOPE
 int
 operator_precedence(token_t t)
 {
@@ -90,7 +95,7 @@ print_token_type(token_t t)
 
 //all the stack ish
 void
-stackPush(stackListOp* stackPtr, struct token* data)
+stackPush(stackListOp* stackPtr, token_t* data)
 {
 	printf("line num of token being pushed:%i\n", data->line_num);
 
@@ -117,13 +122,14 @@ stackPush(stackListOp* stackPtr, struct token* data)
 		newNode->prev = stackPtr->tail;
 		stackPtr->tail = newNode;
 	}
+	printf("result of OPPush\n");
+	displayDataFromTopOfStack(stackPtr);
+
 }
 
 void
 stackPushCom(stackListCom* stackPtr, struct command* data)
 {
-	printf("int status of command being pushed:%i\n", data->status);
-
 	//creates the node
 	struct stackNodeCom* newNode = (struct stackNodeCom*) malloc(sizeof(struct stackNodeCom));
     if(newNode == NULL)
@@ -147,10 +153,13 @@ stackPushCom(stackListCom* stackPtr, struct command* data)
 		newNode->prev = stackPtr->tail;
 		stackPtr->tail = newNode;
 	}
+	printf("result of ComPush\n");
+	displayDataFromTopOfStackCom(stackPtr);
+
 }
 
 //popfunction
-struct token*	
+token_t*	
 stackPop(stackListOp* stackPtr)
 {
 	if (stackPtr->tail == NULL)
@@ -160,8 +169,11 @@ stackPop(stackListOp* stackPtr)
 		struct stackNodeOp* temp = stackPtr->tail;
 		stackPtr->tail = NULL;
 		stackPtr->head = NULL;
-		struct token* tempTok = (temp->tok);	
+		token_t* tempTok = (temp->tok);	
 		free(temp);
+		displayDataFromTopOfStack(stackPtr);
+		printf("result of OPPop\n");
+
 		return tempTok;	
 	}
 	else
@@ -169,8 +181,11 @@ stackPop(stackListOp* stackPtr)
 		struct stackNodeOp* temp = stackPtr->tail;
 		stackPtr->tail = stackPtr->tail->prev;
 		stackPtr->tail->next = NULL;
-		struct token* tempTok = (temp->tok);	
+		token_t* tempTok = (temp->tok);	
 		free(temp);
+		printf("result of OPPop\n");
+		displayDataFromTopOfStack(stackPtr);
+
 		return tempTok;
 	}
 	return NULL;
@@ -189,6 +204,8 @@ stackPopCom(stackListCom* stackPtr)
 		stackPtr->head = NULL;
 		struct command* tempCom = (temp->com);	
 		free(temp);
+		printf("result of comPop\n");
+		displayDataFromTopOfStackCom(stackPtr);
 		return tempCom;	
 	}
 	else
@@ -198,12 +215,16 @@ stackPopCom(stackListCom* stackPtr)
 		stackPtr->tail->next = NULL;
 		struct command* tempCom = (temp->com);	
 		free(temp);
+		printf("result of comPop\n");
+		displayDataFromTopOfStackCom(stackPtr);
+
+
 		return tempCom;
 	}
 	return NULL;
 }
 
-struct token*	
+token_t*	
 stackTop(stackListOp* stackPtr)
 {
 	if (stackPtr->tail == NULL)
@@ -231,37 +252,69 @@ stackTopCom(stackListCom* stackPtr)
 void
 displayDataFromTopOfStack(stackListOp* stackPtr)
 {
-	printf("top of stack begins now...\n");
+	printf("\n-------------\nOPSTACK TOP\n-------------\n");
 	struct stackNodeOp* it = stackPtr->tail;
 	while (it != NULL)
 	{
-		printf("line number of token = %i\n", it->tok->line_num);	//prints line number to see if token is properly stored in list
+		switch(it->tok->type)
+		{
+			case AND:
+				printf("AND\n");
+				break;
+  			case OR:
+  				printf("OR\n");
+  				break;
+  			case PIPE:
+  				printf("PIPE\n");
+  				break;
+  			case SEMICOLON:
+  				printf("SEMICOLON\n");
+  				break;
+  			case LEFT_PARENTHESIS:
+  				printf("LEFT_PARENTHESIS\n");
+  				break;
+  			default:
+  				printf("UNKNOWN\n");
+  				break;
+		}
+		//printf("line number of token = %i\n", it->tok->line_num);	//prints line number to see if token is properly stored in list
 		it = it->prev;
 	}
-	printf("bottom of stack ^^^\n\n");
+	printf("------------------\nOPSTACK BOTTOM ^^^\n-----------------\n");
 }
 
 void
 displayDataFromTopOfStackCom(stackListCom* stackPtr)
 {
-	printf("top of stack begins now...\n");
+	printf("\n-------------\nCOMSTACK TOP\n-------------\n");
 	struct stackNodeCom* it = stackPtr->tail;
 	while (it != NULL)
-	{
-		printf("status of command = %i\n", it->com->status);	//prints line number to see if token is properly stored in list
+	{		
 		
-		printf("words of command = ");
-		int j = 0;
-		while (it->com->u.word[j][0] != '\0')			//prints all words in the stacked commands
+
+		if (it->com->type == SIMPLE_COMMAND)
 		{
-			printf("%s ", it->com->u.word[j]);
-			j++;
+			printf("words of command = ");
+			int j = 0;
+			while (it->com->u.word[j][0] != '\0')			//prints all words in the stacked commands
+			{
+				printf("%s ", it->com->u.word[j]);
+				j++;
+			}
+			printf("\n");
 		}
-		printf("\n");
+		else if (it->com->type == AND_COMMAND)
+			printf("AND_COMMAND\n");
+		else if (it->com->type == OR_COMMAND)
+			printf("OR_COMMAND\n");
+		else if (it->com->type == PIPE_COMMAND)
+			printf("PIPE_COMMAND\n");
+		else if (it->com->type == SEQUENCE_COMMAND)
+			printf("SEMICOLON_COMMAND\n");
 
 		it = it->prev;
 	}
-	printf("bottom of stack ^^^\n\n");
+	printf("------------------\nCOMSTACK BOTTOM ^^^\n-----------------\n");
 }
 
 
@@ -669,7 +722,7 @@ get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t*
 }
 
 void
-handleTokenBuf(struct token* tok, size_t len)
+handleTokenBuf(token_t* tok, size_t len)
 {
 	//allocating stacks
   stackListOp opStack;
@@ -683,53 +736,143 @@ handleTokenBuf(struct token* tok, size_t len)
   size_t i = 0;
   while(i < len)
   {
-  	if (tok[i].type != WORD_TOKEN)
-  	{
-  		stackPush(&opStack, &tok[i]);
-  		printf("opStack\n");
-  		displayDataFromTopOfStack(&opStack);
-  		i++;
-  	}
-  	else	//TODO: complete implementation of creating command
-  	{
-  		int wordCount = 0;
-
-  		struct command *newCommand = malloc(sizeof(struct command));
-  		newCommand->status = tok[i].line_num; //TODO: not true, just used for testing purposes
-  		newCommand->type = SIMPLE_COMMAND;
-
-  		int wrdsAlctd = 4;
-  		newCommand->u.word = malloc( sizeof(char*) * (4) );	//TODO: add reallocation if too big
-  		newCommand->u.word[wordCount] = tok[i].token_word;
-
-  		i++;
-  		wordCount++;
-
-  		//now cycle thru next tokens until reaching something not a word token
-  		while ((i < len) && (tok[i].type == WORD_TOKEN))	//TODO: account for inputs/outputs/status when creating commands
+  	switch(tok[i].type)	//TODO: greater than and less than need to be dealt with l8trrrrr (oh and also comment and newline)
+  	{	
+  		case AND:
+  		case OR:
+  		case PIPE:
+  		case SEMICOLON:
   		{
-  			//check if enough space in words
-  			//if necessary, realloc
-  			if (wordCount >= wrdsAlctd)
+  			//check if opStack is empty
+  			if (stackTop(&opStack) != NULL)
   			{
-  				newCommand->u.word = realloc(newCommand->u.word,  sizeof(char*) * (wrdsAlctd + 4));
-  				wrdsAlctd += 4;
-  			}
+ 				//check precedence and pop other stuff if necessary before stacking (TODO)
+ 				//implement safe guards for empty command stacks...and misplaced operators (TODO)
 
-  			//add word to current command
+ 				while ((stackTop(&opStack) != NULL) && (operator_precedence(*(stackTop(&opStack)))) >= (operator_precedence((tok[i]))))	//keep popping while operators on stack are gre...
+   				{
+   					//pop, join with 2 top commands on command struct
+   					token_t* opTok = stackPop(&opStack);
+   					struct command* command1 = stackPopCom(&comStack);
+   					struct command* command2 = stackPopCom(&comStack);
+
+					struct command *newCommand = malloc(sizeof(struct command));
+  					newCommand->status = tok[i].line_num; 
+  					newCommand->u.command[0] = command1;
+  					newCommand->u.command[1] = command2;
+  					newCommand->status = -1;	//TODO change statussss
+  					
+  					//select the type of the new combined command to be created from popped commands and operator
+  					switch(opTok->type)
+  					{
+  						case AND:
+  							newCommand->type = AND_COMMAND;         // A && B
+  							break;
+  						case SEMICOLON:
+    						newCommand->type = SEQUENCE_COMMAND;    // A ; B
+    						break;
+    					case OR:
+   							newCommand->type = OR_COMMAND;          // A || B
+   							break;
+   						case PIPE:
+    						newCommand->type = PIPE_COMMAND;        // A | B
+    						break;
+    					case LESS_THAN:
+    					case GREATER_THAN:
+    					case NEWLINE:
+    					case LEFT_PARENTHESIS:
+    					case RIGHT_PARENTHESIS:
+    					case WORD_TOKEN:
+    					case UNKNOWN_TOKEN:
+    					case COMMENT:
+    						printf("some token found in operator that is not supported!!!\n");
+    						break;
+    				}
+
+    				stackPushCom(&comStack, newCommand);
+   					//PSEUDO
+   					//pop operator
+   					
+   					//pop 2 commands
+   					//make new command
+   					//new command is operator
+   					//new command has command[0],[1] = 2 popped commands from command tree
+   					//push new command to command stack
+   				}
+  			}
+  		}
+  		case LEFT_PARENTHESIS:
+			stackPush(&opStack, &tok[i]);
+  			i++;
+  			break;
+  		case RIGHT_PARENTHESIS:	//to implement (TODO)
+  			i++;
+  			break;
+
+  		
+  		case WORD_TOKEN:
+  		{
+
+  			int wordCount = 0;
+
+  			struct command *newCommand = malloc(sizeof(struct command));
+  			newCommand->status = tok[i].line_num; //TODO: not true, just used for testing purposes
+  			newCommand->type = SIMPLE_COMMAND;
+
+  			int wrdsAlctd = 4;
+  			newCommand->u.word = malloc( sizeof(char*) * (4) );	//TODO: add reallocation if too big
   			newCommand->u.word[wordCount] = tok[i].token_word;
+
   			i++;
   			wordCount++;
+
+  			//now cycle thru next tokens until reaching something not a word token
+  			while ((i < len) && (tok[i].type == WORD_TOKEN))	//TODO: account for inputs/outputs/status when creating commands
+  			{
+  				//check if enough space in words
+  				//if necessary, realloc
+  				if (wordCount >= wrdsAlctd)
+  				{
+  					newCommand->u.word = realloc(newCommand->u.word,  sizeof(char*) * (wrdsAlctd + 4));
+  					wrdsAlctd += 4;
+  				}
+
+  				//add word to current command
+  				newCommand->u.word[wordCount] = tok[i].token_word;
+  				i++;
+  				wordCount++;
+  			}
+  			newCommand->u.word[wordCount] = "\0";
+  			stackPushCom(&comStack, newCommand); 
+  			break;
   		}
-  		newCommand->u.word[wordCount] = "\0";
-  		stackPushCom(&comStack, newCommand); 
-  		printf("comStack:\n");
-  		displayDataFromTopOfStackCom(&comStack);
 
-
+  		case COMMENT:
+  			printf("encountered a comment\n");
+  			i++;
+  			break;
+  		case UNKNOWN_TOKEN:
+  			printf("encountered an unknown token\n");
+  			i++;
+  			break;
+  		case GREATER_THAN:
+  			printf("encountered a greater than\n");
+  			i++;
+  			break;
+  		case LESS_THAN:
+  			printf("encountered a less than\n");
+  			i++;
+  			break;
+  		case NEWLINE:
+  			printf("encountered a newline\n");
+  			i++;
+  			break;
 
   	}
+  	
   }
+  //TODO: pop final operator off of the op stack and make a final command to top off the command tree...
+  //and then return it so it can be put into the array of command trees to be added to the command stream
 
 
 }
@@ -742,11 +885,104 @@ make_command_stream (int (*get_next_byte) (void *),
   /* FIXME: Replace this with your implementation.  You may need to
 	 add auxiliary functions and otherwise modify the source code.
 	 You can also use external functions defined in the GNU C Library.  */
-  
+
+
+
+  size_t bufflen = 0;
+  char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
+  size_t i;
+
+
+  if(bufflen) {} //TODO: Fix
+  if(i) {}				// TODO: Fix
+  if(inputString) {}	//TODO: Fix
+
+
+  /////////////////////////////
+  //RIP MY SWITCH STATEMENT////
+  /////////////////////////////
+  //prints input string for reference
+  for (i = 0; i < bufflen; i++) {
+	printf("%c", inputString[i]);
+  }
+  printf("\n");
+
+  //  ERROR TESTING FOR TOKENIZING WORDS TODO:uncomment?
+  size_t token_array_size;
+  token_t *t = tokenize(inputString, bufflen, &token_array_size);
+
+	size_t token_ptr_array_size;
+	token_t **token_ptr_array = get_token_arr(t, token_array_size, &token_ptr_array_size);
+	if (token_ptr_array_size || token_ptr_array) {} // TODO: Fix
+	printf("Hello \n");
+	printf("%i \n", (int)token_ptr_array_size);
+	test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
+
+  handleTokenBuf(t, token_array_size);
+
+
+
+
   
 
 
-  /*
+	/*
+	// Testing for the tokenize function, Uncomment if needed
+  int j;
+  for (j = 0; j < (int)token_array_size; j++)
+  {
+  	print_token_type(t[j]);
+  }
+  
+  printf("%i",(int)token_array_size);
+	*/
+
+ 	error (1, 0, "command reading not yet implemented");
+  return 0;
+}
+
+
+
+command_t
+read_command_stream (command_stream_t s)
+{
+  /* FIXME: Replace this with your implementation too.  */
+  error (1, 0, "command reading not yet implemented");
+  return 0;
+
+  if (s) {} //TODO: So the compiler doesn't flip out
+}
+
+
+
+  		////////////////////////////////////
+  		//STACK TESTING AND SAMPLE USAGE
+  		/////////////////////////////////////
+  		//testing stack
+  		/*struct token token1;
+  		token1.line_num = 1;
+
+  		struct token token2;
+  		token2.line_num = 2;
+
+  		struct token token3;
+  		token3.line_num = 3;
+
+  		stackPush(&opStack, &token1);
+		stackPush(&opStack, &token2);
+		stackPush(&opStack, &token3);
+
+		displayDataFromTopOfStack(&opStack);	//prints line nums from tokens from top to bottom of stack
+		struct token* poppedToken = stackPop(&opStack);		//TODO: change to command* or token*
+		displayDataFromTopOfStack(&opStack);
+
+		printf("popped token's line = %i\n", poppedToken->line_num);	
+		*/
+		////////////////////////////////////
+
+
+		//MORE TESTS//
+		  /*
   //allocating stacks
   stackList opStack;
   opStack.head = NULL;
@@ -809,188 +1045,3 @@ make_command_stream (int (*get_next_byte) (void *),
 
   stackPushCom(&comStack, &comArray[0]);
   displayDataFromTopOfStackCom(&comStack);*/
-
-
-
-  size_t bufflen = 0;
-  char * inputString = get_string(get_next_byte_argument, get_next_byte, &bufflen);
-  size_t i;
-
-
-  if(bufflen) {} //TODO: Fix
-  if(i) {}				// TODO: Fix
-  if(inputString) {}	//TODO: Fix
-
-
-  /////////////////////////////
-  //RIP MY SWITCH STATEMENT////
-  /////////////////////////////
-  //prints input string for reference
-  for (i = 0; i < bufflen; i++) {
-	printf("%c", inputString[i]);
-  }
-  printf("\n");
-
-  //  ERROR TESTING FOR TOKENIZING WORDS TODO:uncomment?
-  size_t token_array_size;
-  token_t *t = tokenize(inputString, bufflen, &token_array_size);
-
-	size_t token_ptr_array_size;
-	token_t **token_ptr_array = get_token_arr(t, token_array_size, &token_ptr_array_size);
-	if (token_ptr_array_size || token_ptr_array) {} // TODO: Fix
-	printf("Hello \n");
-	printf("%i \n", (int)token_ptr_array_size);
-	test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
-
-  handleTokenBuf(t, token_array_size);
-
-
-
-
-  /*for (i = 0; i < bufflen; i++) {
-    printf("%c", inputString[i]);
-  }
-  printf("\n");
-
-  //cycles thru input string
-  for (i = 0; i < bufflen; i++) {
-    char c = inputString[i];
-   // printf ("%zd\n", i);
-    switch(c)
-      {
-      case ' ':
-	printf("space!\n");
-	break;
-      case ';':
-	printf("semi-colon (END_OF_LINE\n");
-	break;
-      case '(':
-	printf("open-parenthesis (BEGIN_SUBSHELL\n");
-	break;
-      case ')':
-	printf("close-parenthesis (END_SUBSHELL\n");
-	break;
-      case '<':
-	printf("less than (INPUT\n");
-	break;
-      case '>':
-	printf("greater than (OUTPUT\n");
-	break;
-      case '|':
-	if (inputString[i+1] == '|')
-	  {
-	    printf("double bars(OR_COMMAND)\n");
-	    i++;
-	  }
-	else
-	  {
-	    printf("PIPE!\n");
-	  }
-	break;
-      case '&':
-	if (inputString[i+1] == '&')
-	  {
-	    printf("double ampersands(AND_COMMAND)\n");
-	    i++;
-	  }
-	break;
-	case '\n':
-		printf("endline\n");
-		break;
-      default:
-        if (isalpha(c))
-	  {
-	    // printf("it's a letter\n");
-	    int tempBufLen = 12;
-	    char *tempBuf = malloc( sizeof(char) * (12) );  //allocate buffer for each individual word made of digits,
-	    //letters, and _s
-	    int j = 0;
-	    while (isalpha(inputString[i]) || isdigit(inputString[i]) || inputString[i] == '_') // TODO: add the rest of the chars tht are considered part of a word
-	      {
-		if (tempBufLen == j)
-		  {
-		    tempBuf = realloc(tempBuf,  sizeof(char) * (tempBufLen * 2));
-		    tempBufLen *= 2;
-		  }
-		tempBuf[j] = inputString[i];
-		j++;
-		i++;
-	      }
-	    int k;
-	    for (k = 0; k < tempBufLen; k++)
-	      {
-		char d = tempBuf[k];
-		printf("%c", d);
-	      }
-	    printf("\n");
-	    free(tempBuf);
-	    i--;
-	  }
-	else if (isdigit(c))
-	  {
-	    printf("it's a digit\n");
-	  }
-	else
-	  {
-	    //printf("%zd\n", i);
-	    printf("something else?\n");//TODO: this prints after the entire array has been traversed (bad access?)
-	  }
-	break;
-      }
-  }*/
-      ////////////////////////
-
-
-	/*
-	// Testing for the tokenize function, Uncomment if needed
-  int j;
-  for (j = 0; j < (int)token_array_size; j++)
-  {
-  	print_token_type(t[j]);
-  }
-  
-  printf("%i",(int)token_array_size);
-	*/
-
- 	error (1, 0, "command reading not yet implemented");
-  return 0;
-}
-
-
-
-command_t
-read_command_stream (command_stream_t s)
-{
-  /* FIXME: Replace this with your implementation too.  */
-  error (1, 0, "command reading not yet implemented");
-  return 0;
-
-  if (s) {} //TODO: So the compiler doesn't flip out
-}
-
-
-
-  		////////////////////////////////////
-  		//STACK TESTING AND SAMPLE USAGE
-  		/////////////////////////////////////
-  		//testing stack
-  		/*struct token token1;
-  		token1.line_num = 1;
-
-  		struct token token2;
-  		token2.line_num = 2;
-
-  		struct token token3;
-  		token3.line_num = 3;
-
-  		stackPush(&opStack, &token1);
-		stackPush(&opStack, &token2);
-		stackPush(&opStack, &token3);
-
-		displayDataFromTopOfStack(&opStack);	//prints line nums from tokens from top to bottom of stack
-		struct token* poppedToken = stackPop(&opStack);		//TODO: change to command* or token*
-		displayDataFromTopOfStack(&opStack);
-
-		printf("popped token's line = %i\n", poppedToken->line_num);	
-		*/
-		////////////////////////////////////
