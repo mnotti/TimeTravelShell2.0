@@ -24,6 +24,7 @@ enum token_type
   WORD_TOKEN,
   COMMENT,
   UNKNOWN_TOKEN,
+  END,
 };
 
 //added by kyyyyyle

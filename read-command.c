@@ -88,7 +88,6 @@ print_token_type(token_t t)
 	}
 }
 
-
 //all the stack ish
 void
 stackPush(stackListOp* stackPtr, struct token* data)
@@ -267,9 +266,6 @@ displayDataFromTopOfStackCom(stackListCom* stackPtr)
 
 
 
-
-
-
 int
 is_valid_word_char(char c)
 {
@@ -304,7 +300,197 @@ check_char_type(char c)
 }
 */
 
-// TODO: Lines not working, easy to implememnt, not sure if we need it though
+/*
+OLD VERSION OF THE FUNCTION
+void
+test_token_ptr_arr(token_t** token_ptr_arr, size_t token_ptr_arr_size)
+{
+	int i;
+	int j;
+	for (i = 0; i < (int)token_ptr_arr_size; i++)
+	{
+		j = 0;
+		while (token_ptr_arr[i][j].type != END)
+		{
+		  print_token_type(token_ptr_arr[i][j]);
+		  j++;
+		}
+		printf("New command tree \n");
+	}
+}
+*/
+void 
+print_type(token_t t)
+{
+	switch(t.type)
+	{
+		case SEMICOLON:
+			printf(";");
+			break;
+		case OR:
+			printf("||");
+			break;
+		case AND:
+			printf("&&");
+			break;
+		case PIPE:
+			printf("|");
+			break;
+		case GREATER_THAN:
+			printf(">");
+			break;
+		case LESS_THAN:
+			printf("<");
+			break;
+		case LEFT_PARENTHESIS:
+			printf("(");
+			break;
+		case RIGHT_PARENTHESIS:
+			printf(")");
+			break;
+		case WORD_TOKEN:
+			printf(" %s ", t.token_word);
+			break;
+		default:
+			printf("I DON'T KNOW WHAT THIS IS!!!!");
+			break;
+	}
+}
+
+void
+test_token_ptr_arr(token_t** token_ptr_arr, size_t token_ptr_arr_size)
+{
+	int i;
+	int j;
+	for (i = 0; i < (int)token_ptr_arr_size; i++)
+	{
+		j = 0;
+		while (token_ptr_arr[i][j].type != END)
+		{
+			print_type(token_ptr_arr[i][j]);
+			j++;
+		}
+		printf("\n");
+	}
+}
+
+
+token_t**
+get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
+{
+	size_t pos = 0;
+	size_t num_token_streams = 0;
+	//size_t total_bytes_used = 0;
+	// Allocate room for array of pointers
+	size_t max_token_bytes = 20 * sizeof(token_t); // TODO: Change 20 to a bigger number, smaller number to test allocation
+	size_t max_ptr_bytes = 20 * sizeof(token_t_ptr); // TODO: Change 20 to a bigger number, smaller number to test allocation
+
+	// Allocate memory for the array of pointers
+	token_t_ptr *token_ptr_array = checked_malloc(max_ptr_bytes);;
+
+	// Allocate a token array for the first space in the pointer array.
+	token_ptr_array[0] = checked_malloc(max_token_bytes);
+	size_t start = 0;
+	int newline_count = 0;
+	size_t tokens_in_stream = 0;
+
+	// Ignore all the leading newlines
+	if (t[0].type == NEWLINE)
+	{
+		while (t[pos].type == NEWLINE && pos < token_size)
+		{
+			pos++;
+			start++;
+		}
+	}
+
+	// Begin looping
+	while (pos < token_size)
+	{
+		if (t[pos].type == NEWLINE)
+		{
+			// Check the thing before the newline
+			switch (t[pos-1].type)
+			{
+				// If its an opperator
+				case PIPE:
+				case OR:
+				case AND:
+				case SEMICOLON:
+					// Count how many spaces to ignore when allocating via newline_count
+					while (t[pos].type == NEWLINE && pos < token_size)
+					{
+						newline_count++;
+						pos++;
+					}
+					break;
+				// If it ends in anything else
+				default:
+					// If the next thing is a newline then break off the token stream
+					if (pos+1 < token_size && t[pos+1].type == NEWLINE)
+					{
+						if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+							token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+						// Put in an end token so you know where the stream ends
+						token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+
+						num_token_streams++;
+						tokens_in_stream = 0;
+						max_token_bytes = 20 * sizeof(token_t);
+						token_ptr_array[num_token_streams] = checked_malloc(max_token_bytes);
+						// Ignore the rest of the newlines
+						while (t[pos].type == NEWLINE && pos < token_size)
+							pos++;
+					}
+					// Change newline to a ; token
+					else
+					{
+						token_ptr_array[num_token_streams][tokens_in_stream] = t[pos];
+						token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
+						tokens_in_stream++;
+						if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+							token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+						pos++;
+					}
+					break;
+			}
+		}
+
+		// Ignore if it's a comment
+		else if (t[pos].type == COMMENT)
+			pos++;
+
+		// If its anything but a newline
+		else
+		{
+			token_ptr_array[num_token_streams][tokens_in_stream] = t[pos];
+			tokens_in_stream++;
+			pos++;
+			if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+				token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+		}
+
+		if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
+			token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
+	}
+
+	if (token_ptr_array[num_token_streams][tokens_in_stream].type != END)
+		token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+
+	// Check if you need to realloc
+	if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
+	  token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
+
+	// Put in the last token stream
+	token_ptr_array[num_token_streams+1] = checked_malloc(sizeof(token_t));
+	token_ptr_array[num_token_streams+1][0].type = END;
+	num_token_streams++;
+	*token_ptr_arr_size = num_token_streams;
+	return token_ptr_array;
+}
+
+
+// TODO: Number of lines not working, easy to implememnt, not sure if we need it though
 token_t*
 tokenize(char* string, size_t len, size_t *token_array_size)
 {
@@ -649,6 +835,13 @@ make_command_stream (int (*get_next_byte) (void *),
   size_t token_array_size;
   token_t *t = tokenize(inputString, bufflen, &token_array_size);
 
+	size_t token_ptr_array_size;
+	token_t **token_ptr_array = get_token_arr(t, token_array_size, &token_ptr_array_size);
+	if (token_ptr_array_size || token_ptr_array) {} // TODO: Fix
+	printf("Hello \n");
+	printf("%i \n", (int)token_ptr_array_size);
+	test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
+
   handleTokenBuf(t, token_array_size);
 
 
@@ -747,6 +940,9 @@ make_command_stream (int (*get_next_byte) (void *),
   }*/
       ////////////////////////
 
+
+	/*
+	// Testing for the tokenize function, Uncomment if needed
   int j;
   for (j = 0; j < (int)token_array_size; j++)
   {
@@ -754,11 +950,11 @@ make_command_stream (int (*get_next_byte) (void *),
   }
   
   printf("%i",(int)token_array_size);
+	*/
 
  	error (1, 0, "command reading not yet implemented");
   return 0;
 }
-
 
 
 
