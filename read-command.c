@@ -19,6 +19,18 @@
 //defining struct command_streamas TA specified...
 
 
+/*
+TODO LIST: 
+Handle the case for all functions where the input is empty
+Fix newline counter in tokenize function (tells what line each token is on)
+Free token array created by tokenize function (can probably do this after we make the token pointer array)
+Free token pointer array and each token array created by token ptr array function
+*/
+
+
+
+
+
 //finished TA's given definition
 
 void displayDataFromTopOfStack(stackListOp* stackPtr);
