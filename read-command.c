@@ -634,7 +634,7 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 					pos++;
 					break;
 				case '(':
-					token_buff[num_tokens].type = RIGHT_PARENTHESIS;
+					token_buff[num_tokens].type = LEFT_PARENTHESIS;
 					token_buff[num_tokens].token_word = NULL;
 					num_tokens++;
 					pos++;
@@ -813,8 +813,10 @@ handleTokenBuf(token_t* tok, size_t len)
    				}
   			}
   		}
+  			break;
   		case LEFT_PARENTHESIS:
 			stackPush(&opStack, &tok[i]);
+			printf("above prints stack after leftP\n");
   			i++;
   			break;
   		case RIGHT_PARENTHESIS:	//to implement (TODO)
