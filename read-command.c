@@ -25,6 +25,8 @@ Handle the case for all functions where the input is empty
 Fix newline counter in tokenize function (tells what line each token is on)
 Free token array created by tokenize function (can probably do this after we make the token pointer array)
 Free token pointer array and each token array created by token ptr array function
+Change the buffer size in the tokenize functions to be something more realistic.
+	small is good for testing reallocation
 */
 
 
@@ -448,7 +450,7 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 {
 	size_t pos = 0;
 	size_t num_token_streams = 0;
-	//size_t total_bytes_used = 0;
+
 	// Allocate room for array of pointers
 	size_t max_token_bytes = 20 * sizeof(token_t); // TODO: Change 20 to a bigger number, smaller number to test allocation
 	size_t max_ptr_bytes = 20 * sizeof(token_t_ptr); // TODO: Change 20 to a bigger number, smaller number to test allocation
@@ -992,7 +994,7 @@ make_command_stream (int (*get_next_byte) (void *),
 	printf("%i \n", (int)token_ptr_array_size);
 	test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
 
-  handleTokenBuf(t, token_array_size);
+  // handleTokenBuf(t, token_array_size);
 
 
 
@@ -1000,7 +1002,7 @@ make_command_stream (int (*get_next_byte) (void *),
   
 
 
-	/*
+	
 	// Testing for the tokenize function, Uncomment if needed
   int j;
   for (j = 0; j < (int)token_array_size; j++)
@@ -1009,7 +1011,7 @@ make_command_stream (int (*get_next_byte) (void *),
   }
   
   printf("%i",(int)token_array_size);
-	*/
+	
 
  	error (1, 0, "command reading not yet implemented");
   return 0;
