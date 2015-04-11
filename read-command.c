@@ -501,8 +501,10 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 					{
 						if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
 							token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
-						// Put in an end token so you know where the stream ends
-						token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+						token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
+						if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+							token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+						token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
 
 						num_token_streams++;
 						tokens_in_stream = 0;
@@ -544,8 +546,12 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 			token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
 	}
 
-	if (token_ptr_array[num_token_streams][tokens_in_stream].type != END)
-		token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+	if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+		token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+	token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
+	if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+		token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+	token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
 
 	// Check if you need to realloc
 	if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
@@ -569,7 +575,7 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 	token_t *token_buff = checked_malloc(token_buff_max_bytes);
 	size_t num_tokens = 0;
 	size_t pos = 0;
-	int line = 0;
+	int line = 1;
 	char token_char;
 	while (pos < len)
 	{
@@ -617,36 +623,43 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 				case '\n':
 					token_buff[num_tokens].type = NEWLINE;
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
+					line++;
 					num_tokens++;
 					pos++;
 					break;
 				case ';':
 					token_buff[num_tokens].type = SEMICOLON;
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
 				case '>':
 					token_buff[num_tokens].type = GREATER_THAN;
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
 				case '<':
 					token_buff[num_tokens].type = LESS_THAN;
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
 				case '(':
 					token_buff[num_tokens].type = LEFT_PARENTHESIS;
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
 				case ')':
 					token_buff[num_tokens].type = RIGHT_PARENTHESIS;
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
@@ -670,6 +683,7 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 						}
 					}
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					break;
 				case '&':
@@ -692,10 +706,12 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 						}
 					}
 					token_buff[num_tokens].token_word = NULL;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					break;
 				default:
 					token_buff[num_tokens].type = UNKNOWN_TOKEN;
+					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
@@ -1003,11 +1019,12 @@ make_command_stream (int (*get_next_byte) (void *),
 
 
 	
-	// Testing for the tokenize function, Uncomment if needed
+	// Testing for the tokenize function, comment out/uncomment if needed
   int j;
   for (j = 0; j < (int)token_array_size; j++)
   {
   	print_token_type(t[j]);
+  	printf("This token is on line %i \n", t[j].line_num);
   }
   
   printf("%i",(int)token_array_size);
