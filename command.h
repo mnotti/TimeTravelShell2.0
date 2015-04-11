@@ -32,9 +32,6 @@ int command_status (command_t);
 // Returns the precidence of a operator, if its not valid it returns -1
 int operator_precedence(token_t t);
 
-// Debugging
-void print_type(token_t t);
-
 // Debugging, prints token type
 void print_token_type(token_t t);
 
@@ -44,9 +41,7 @@ int is_valid_word_char(char c);
 // Tokenizes a buffer
 token_t* tokenize(char* string, size_t len, size_t *token_array_size);
 
-// Breaks up the token stream into many token streams based on what command tree the tokens belong to
-token_t** get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size);
-
 // Gets a buffer string
 char* get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen);
+
 

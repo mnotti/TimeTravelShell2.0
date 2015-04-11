@@ -87,7 +87,7 @@ struct command
 
 struct commandNode{
   struct command* command; //forms the root of the tree
-  struct command* next;
+  struct commandNode* next;
 };
 
 typedef struct command_stream{

@@ -116,7 +116,7 @@ stackPush(stackListOp* stackPtr, token_t* data)
 	printf("line num of token being pushed:%i\n", data->line_num);
 
 	//creates the node
-	struct stackNodeOp* newNode = (struct stackNodeOp*) malloc(sizeof(struct stackNodeOp));
+	struct stackNodeOp* newNode = (struct stackNodeOp*) malloc(sizeof(struct stackNodeOp));		//TODO: maybe free???
     if(newNode == NULL)
         printf("problem allocating memory for node\n");
     newNode->tok = data;	
@@ -738,8 +738,8 @@ get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t*
   
 }
 
-void
-handleTokenBuf(token_t* tok, size_t len)
+command_t
+handleTokenBuf(token_t* tok)
 {
 	//allocating stacks
   stackListOp opStack;
@@ -751,7 +751,7 @@ handleTokenBuf(token_t* tok, size_t len)
   comStack.tail = NULL;
 
   size_t i = 0;
-  while(i < len)
+  while(tok[i].type != END)
   {
   	switch(tok[i].type)	//TODO: greater than and less than need to be dealt with l8trrrrr (oh and also comment and newline)
   	{	
@@ -769,10 +769,11 @@ handleTokenBuf(token_t* tok, size_t len)
    				{
    					//pop, join with 2 top commands on command struct
    					token_t* opTok = stackPop(&opStack);
-   					struct command* command1 = stackPopCom(&comStack);
+   					
    					struct command* command2 = stackPopCom(&comStack);
+   					struct command* command1 = stackPopCom(&comStack);
 
-					struct command *newCommand = malloc(sizeof(struct command));
+					struct command *newCommand = malloc(sizeof(struct command));		//TODO: maybe free???
   					newCommand->status = tok[i].line_num; 
   					newCommand->u.command[0] = command1;
   					newCommand->u.command[1] = command2;
@@ -833,10 +834,11 @@ handleTokenBuf(token_t* tok, size_t len)
    				{
    					//pop, join with 2 top commands on command struct
    					token_t* opTok = stackPop(&opStack);
-   					struct command* command1 = stackPopCom(&comStack);
+   					
    					struct command* command2 = stackPopCom(&comStack);
+   					struct command* command1 = stackPopCom(&comStack);
 
-					struct command *newCommand = malloc(sizeof(struct command));
+					struct command *newCommand = malloc(sizeof(struct command));		//TODO: maybe free???
   					//newCommand->status = tok[i].line_num; 
   					newCommand->u.command[0] = command1;
   					newCommand->u.command[1] = command2;
@@ -883,7 +885,7 @@ handleTokenBuf(token_t* tok, size_t len)
     				if (lParenthOp)
     				{
     					struct command* command1 = stackPopCom(&comStack);	//command inside of subshell
-    					struct command *newCommand = malloc(sizeof(struct command));
+    					struct command *newCommand = malloc(sizeof(struct command));		//TODO: maybe free???
 
     					newCommand->type = SUBSHELL_COMMAND;
     					newCommand->u.subshell_command = command1;
@@ -902,19 +904,19 @@ handleTokenBuf(token_t* tok, size_t len)
 
   			int wordCount = 0;
 
-  			struct command *newCommand = malloc(sizeof(struct command));
+  			struct command *newCommand = malloc(sizeof(struct command));	//TODO: maybe free???
   			newCommand->status = tok[i].line_num; //TODO: not true, just used for testing purposes
   			newCommand->type = SIMPLE_COMMAND;
 
   			int wrdsAlctd = 4;
-  			newCommand->u.word = malloc( sizeof(char*) * (4) );	//TODO: add reallocation if too big
+  			newCommand->u.word = malloc( sizeof(char*) * (4) );	//TODO: add reallocation if too big 	//TODO: maybe free???
   			newCommand->u.word[wordCount] = tok[i].token_word;
 
   			i++;
   			wordCount++;
 
   			//now cycle thru next tokens until reaching something not a word token
-  			while ((i < len) && (tok[i].type == WORD_TOKEN))	//TODO: account for inputs/outputs/status when creating commands
+  			while ((tok[i].type == WORD_TOKEN)  || (tok[i].type == GREATER_THAN) || (tok[i].type == LESS_THAN))	//TODO: account for inputs/outputs/status when creating commands //used to be a condition (i < len)
   			{
   				//check if enough space in words
   				//if necessary, realloc
@@ -924,20 +926,35 @@ handleTokenBuf(token_t* tok, size_t len)
   					wrdsAlctd += 4;
   				}
 
-  				//add word to current command
-  				newCommand->u.word[wordCount] = tok[i].token_word;
-  				i++;
-  				wordCount++;
+  				if (tok[i].type == WORD_TOKEN)
+  				{	
+  					//add word to current command
+  					newCommand->u.word[wordCount] = tok[i].token_word;
+  					i++;
+  					wordCount++;
+  				}
+  				else if(tok[i].type == LESS_THAN)
+  				{
+  					newCommand->input = tok[i].token_word;
+  					i++;
+  				}
+  				else if(tok[i].type == GREATER_THAN)
+  				{
+  					newCommand->output = tok[i].token_word;
+  					i++;
+  				}
   			}
   			newCommand->u.word[wordCount] = "\0";
   			stackPushCom(&comStack, newCommand); 
   			break;
   		}
 
-  		case COMMENT:
-  		case UNKNOWN_TOKEN:
   		case GREATER_THAN:
   		case LESS_THAN:
+  		
+
+  		case COMMENT:
+  		case UNKNOWN_TOKEN:
   		case NEWLINE:
   		case END:
   			i++;
@@ -947,6 +964,7 @@ handleTokenBuf(token_t* tok, size_t len)
   	}
   	
   }
+  return (stackPopCom(&comStack));
   //TODO: pop final operator off of the op stack and make a final command to top off the command tree...
   //and then return it so it can be put into the array of command trees to be added to the command stream
 
@@ -974,9 +992,7 @@ make_command_stream (int (*get_next_byte) (void *),
   if(inputString) {}	//TODO: Fix
 
 
-  /////////////////////////////
-  //RIP MY SWITCH STATEMENT////
-  /////////////////////////////
+
   //prints input string for reference
   for (i = 0; i < bufflen; i++) {
 	printf("%c", inputString[i]);
@@ -994,27 +1010,52 @@ make_command_stream (int (*get_next_byte) (void *),
 	printf("%i \n", (int)token_ptr_array_size);
 	test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
 
-  // handleTokenBuf(t, token_array_size);
+
+	//initialize command_stream
+	command_stream_t streamy = malloc(sizeof(struct command_stream));	//TODO: maybe free???
+	streamy->head = NULL;
+	streamy->tail = NULL;
+	streamy->cursor = NULL;
+
+	//loop thru token streams
+
+	size_t k = 0;
+	while(k < token_ptr_array_size)
+	{
+		command_t rootCommand = handleTokenBuf(token_ptr_array[k]);
+		printf("command points to %p\n", rootCommand);
+
+		struct commandNode* newCommandNode = malloc(sizeof(struct commandNode));	//TODO: maybe free???
+		newCommandNode->command = rootCommand;
+		newCommandNode->next = NULL;
+		if (k == 0)
+		{
+			streamy->head = newCommandNode;
+			streamy->cursor = newCommandNode;
+			streamy->tail = newCommandNode;
+		}
+		else
+		{
+			streamy->tail->next = newCommandNode;
+			streamy->tail = newCommandNode;
+		}
+
+		k++;
+	}
 
 
-
-
-  
-
-
-	
 	// Testing for the tokenize function, Uncomment if needed
-  int j;
+ /* int j;
   for (j = 0; j < (int)token_array_size; j++)
   {
   	print_token_type(t[j]);
   }
   
-  printf("%i",(int)token_array_size);
+  printf("%i",(int)token_array_size);*/
 	
 
- 	error (1, 0, "command reading not yet implemented");
-  return 0;
+ 	//error (1, 0, "command reading not yet implemented");
+  return streamy;
 }
 
 
@@ -1023,10 +1064,19 @@ command_t
 read_command_stream (command_stream_t s)
 {
   /* FIXME: Replace this with your implementation too.  */
-  error (1, 0, "command reading not yet implemented");
-  return 0;
 
-  if (s) {} //TODO: So the compiler doesn't flip out
+	if (s->cursor == NULL)
+		return NULL;
+	else
+	{
+		struct commandNode* tempCursor = s->cursor;
+		s->cursor = s->cursor->next;
+		return (tempCursor->command);
+	}
+
+  
+
+
 }
 
 
