@@ -52,6 +52,8 @@ operator_precedence(token_t t)
 			return 1;
 		case SEMICOLON:
 			return 0;
+		case LEFT_PARENTHESIS:
+			return -2;	//for easier subshell creation
 		default:
 			return -1;
 	}
@@ -323,7 +325,8 @@ displayDataFromTopOfStackCom(stackListCom* stackPtr)
 			printf("PIPE_COMMAND\n");
 		else if (it->com->type == SEQUENCE_COMMAND)
 			printf("SEMICOLON_COMMAND\n");
-
+		else if (it->com->type == SUBSHELL_COMMAND)
+			printf("SUBSHELL_COMMAND\n");
 		it = it->prev;
 	}
 	printf("------------------\nCOMSTACK BOTTOM ^^^\n-----------------\n");
@@ -756,12 +759,11 @@ handleTokenBuf(token_t* tok, size_t len)
   		case SEMICOLON:
   		{
   			//check if opStack is empty
-  			if (stackTop(&opStack) != NULL)
-  			{
  				//check precedence and pop other stuff if necessary before stacking (TODO)
  				//implement safe guards for empty command stacks...and misplaced operators (TODO)
-
- 				while ((stackTop(&opStack) != NULL) && (operator_precedence(*(stackTop(&opStack)))) >= (operator_precedence((tok[i]))))	//keep popping while operators on stack are gre...
+ 				while ((stackTop(&opStack) != NULL) 
+ 					&& (operator_precedence(*(stackTop(&opStack))) >= 0 ) 
+ 					&& (operator_precedence(*(stackTop(&opStack)))) >= (operator_precedence((tok[i]))))	//keep popping while operators on stack are gre...
    				{
    					//pop, join with 2 top commands on command struct
    					token_t* opTok = stackPop(&opStack);
@@ -797,6 +799,7 @@ handleTokenBuf(token_t* tok, size_t len)
     					case WORD_TOKEN:
     					case UNKNOWN_TOKEN:
     					case COMMENT:
+    					case END:
     						printf("some token found in operator that is not supported!!!\n");
     						break;
     				}
@@ -811,7 +814,8 @@ handleTokenBuf(token_t* tok, size_t len)
    					//new command has command[0],[1] = 2 popped commands from command tree
    					//push new command to command stack
    				}
-  			}
+   				stackPush(&opStack, &tok[i]); 	//push operator onto stack and increment i
+   				i++;
   		}
   			break;
   		case LEFT_PARENTHESIS:
@@ -819,7 +823,74 @@ handleTokenBuf(token_t* tok, size_t len)
 			printf("above prints stack after leftP\n");
   			i++;
   			break;
-  		case RIGHT_PARENTHESIS:	//to implement (TODO)
+  		case RIGHT_PARENTHESIS:	//to implement (TODO) 
+  								//TODO should account for nested parentheses 
+  								//TODO should have a count incrementing for right parentheses encountered
+  			while ((stackTop(&opStack) != NULL) 
+ 					&& (operator_precedence(*(stackTop(&opStack))) != -2 ) )	//keep popping while operators are not NULL or leftP
+   				{
+   					//pop, join with 2 top commands on command struct
+   					token_t* opTok = stackPop(&opStack);
+   					struct command* command1 = stackPopCom(&comStack);
+   					struct command* command2 = stackPopCom(&comStack);
+
+					struct command *newCommand = malloc(sizeof(struct command));
+  					//newCommand->status = tok[i].line_num; 
+  					newCommand->u.command[0] = command1;
+  					newCommand->u.command[1] = command2;
+  					newCommand->status = -1;	//TODO change statussss
+  					
+  					//select the type of the new combined command to be created from popped commands and operator
+  					switch(opTok->type)
+  					{
+  						case AND:
+  							newCommand->type = AND_COMMAND;         // A && B
+  							break;
+  						case SEMICOLON:
+    						newCommand->type = SEQUENCE_COMMAND;    // A ; B
+    						break;
+    					case OR:
+   							newCommand->type = OR_COMMAND;          // A || B
+   							break;
+   						case PIPE:
+    						newCommand->type = PIPE_COMMAND;        // A | B
+    						break;
+    					case LESS_THAN:
+    					case GREATER_THAN:
+    					case NEWLINE:
+    					case LEFT_PARENTHESIS:
+    					case RIGHT_PARENTHESIS:
+    					case WORD_TOKEN:
+    					case UNKNOWN_TOKEN:
+    					case COMMENT:
+    					case END:
+    						printf("some token found in operator that is not supported!!!\n");
+    						break;
+    				}
+    				stackPushCom(&comStack, newCommand);
+
+    			}
+    			if (stackTop(&opStack) == NULL)
+    			{
+    				printf("ERROR! MISMATCHED PARENTHESES!!!!\n");
+    			}
+    			else	//if encounters a left parenthesis
+    			{
+    				token_t* lParenthOp = stackPop(&opStack);		//removes parenthesis from op stack
+
+    				if (lParenthOp)
+    				{
+    					struct command* command1 = stackPopCom(&comStack);	//command inside of subshell
+    					struct command *newCommand = malloc(sizeof(struct command));
+
+    					newCommand->type = SUBSHELL_COMMAND;
+    					newCommand->u.subshell_command = command1;
+  						newCommand->status = -1;	//TODO change statussss
+  						stackPushCom(&comStack, newCommand);
+  					}
+
+
+    			}
   			i++;
   			break;
 
@@ -862,24 +933,13 @@ handleTokenBuf(token_t* tok, size_t len)
   		}
 
   		case COMMENT:
-  			printf("encountered a comment\n");
-  			i++;
-  			break;
   		case UNKNOWN_TOKEN:
-  			printf("encountered an unknown token\n");
-  			i++;
-  			break;
   		case GREATER_THAN:
-  			printf("encountered a greater than\n");
-  			i++;
-  			break;
   		case LESS_THAN:
-  			printf("encountered a less than\n");
-  			i++;
-  			break;
   		case NEWLINE:
-  			printf("encountered a newline\n");
+  		case END:
   			i++;
+  			printf("encountered the something Unexpected (or the end)\n");
   			break;
 
   	}
