@@ -546,12 +546,20 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 			token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
 	}
 
-	if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+	if ((tokens_in_stream+2) * sizeof(token_t) >= max_token_bytes)
 		token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
-	token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
-	if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
-		token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
-	token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
+	if (token_ptr_array[num_token_streams][tokens_in_stream-1].type != SEMICOLON)
+	{
+		token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
+		token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
+	}
+
+	else 
+	{
+		if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+			token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+		token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+	}
 
 	// Check if you need to realloc
 	if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
@@ -566,7 +574,64 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 }
 
 
-// TODO: Number of lines not working, easy to implememnt, not sure if we need it though
+/*
+ If your shell's input does not fall within the above subset, your implementation
+ should output to stderr a syntax error message that starts with the line number 
+ and a colon, and should then exit.
+*/
+
+/*
+void
+is_valid_token_stream(token_t t, size_t token_stream_size)
+{
+  // If the first token is anything but a word
+  if (t[0].type != WORD)
+  {
+    fprintf(stderr, "%i: ERROR: INVALID START TO FILE\n", t[0].line_num);
+    exit(1);
+  }
+  size_t i = 0;
+  while (i < token_stream_size)
+  {
+    switch (t[i].type)
+    {
+      case UNKNOWN_TOKEN:
+        fprintf(stderr, "%i: ERROR: UNKNOWN TOKEN\n", t[i].line_num);
+        exit(1);
+      case OR:
+      case AND:
+      case PIPE:
+      case SEMICOLON:
+      case GREATER_THAN:
+      case LESS_THAN:
+        if (i+1 < token_stream_size)
+        {
+        	switch (t[i+1].type)
+        	{
+        		case OR:
+        		case AND:
+        		case PIPE:
+        		case SEMICOLON:
+        		case GREATER_THAN:
+        		case LESS_THAN:
+        			fprintf(stderr, "%i: ERROR: TWO OPPERATORS NEXT TO EACH OTHER\n", t[i+1].line_num);
+        			exit(1);
+        		default:
+        			break;
+        	}
+        }
+       	break;
+      default:
+      	break;
+    }
+  }
+  if (t[i-1].type != WORD || t[i-1].type != SEMICOLON || t[i-1].type != RIGHT_PARENTHESIS)
+  {
+  	fprintf(stderr, "%i: ERROR: INVALID END TO INPUT\n", t[i-1].line_num);
+  	exit(1);
+  }
+}
+*/ 
 token_t*
 tokenize(char* string, size_t len, size_t *token_array_size)
 {
@@ -580,26 +645,14 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 	while (pos < len)
 	{
 		token_char = string[pos];
-		if (is_valid_word_char(token_char) || token_char == '#')
+		if (is_valid_word_char(token_char))
 		{
 			int start = pos;
-			if (token_char != '#')
+			token_buff[num_tokens].type = WORD_TOKEN;
+			while (is_valid_word_char(token_char) && pos < len)
 			{
-				token_buff[num_tokens].type = WORD_TOKEN;
-				while (is_valid_word_char(token_char) && pos < len)
-				{
-			  	pos++;
-			  	token_char = string[pos];
-				}
-			}
-			else
-			{
-				token_buff[num_tokens].type = COMMENT;
-				while (token_char != '\n' && pos < len)
-				{
-			  	pos++;
-			  	token_char = string[pos];
-				}
+		  	pos++;
+		   	token_char = string[pos];
 			}
 			int token_word_size = pos - start;
 			token_buff[num_tokens].token_word = checked_malloc((sizeof(char) * token_word_size) + sizeof(char));
@@ -616,6 +669,11 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 		}
 		else if (token_char == ' ' || token_char == '\t')
 			pos++;
+		else if (token_char == '#')
+		{
+			while (string[pos] != '\n')
+				pos++;
+		}
 		else
 		{
 			switch(token_char)
