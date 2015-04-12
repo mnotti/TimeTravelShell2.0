@@ -27,6 +27,10 @@ Free token array created by tokenize function (can probably do this after we mak
 Free token pointer array and each token array created by token ptr array function
 Change the buffer size in the tokenize functions to be something more realistic.
 	small is good for testing reallocation
+
+a >b < correctly finds the error, but outputs 0: ERROR: TWO OPPERATORS NEXT TO EACH OTHER
+	because it gets the input as a >b <; So it works, but its not outputting the right
+	line number, not a big deal I don't think.
 */
 
 
@@ -570,6 +574,10 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 	token_ptr_array[num_token_streams+1][0].type = END;
 	num_token_streams++;
 	*token_ptr_arr_size = num_token_streams;
+
+	size_t iter;
+	for (iter = 0; iter < num_token_streams; iter++)
+		is_valid_token_stream(token_ptr_array[iter]);
 	return token_ptr_array;
 }
 
@@ -580,31 +588,80 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
  and a colon, and should then exit.
 */
 
-/*
+
 void
-is_valid_token_stream(token_t t, size_t token_stream_size)
+is_valid_token_stream(token_t *t)
 {
-  // If the first token is anything but a word
-  if (t[0].type != WORD)
+	int left_paren = 0;
+	int right_paren = 0;
+	int paren_error_line = 0;
+  // If the first tokenizeen is anything but a word
+  if (t[0].type != WORD_TOKEN && t[0].type != LEFT_PARENTHESIS)
   {
     fprintf(stderr, "%i: ERROR: INVALID START TO FILE\n", t[0].line_num);
     exit(1);
   }
   size_t i = 0;
-  while (i < token_stream_size)
+  while (t[i].type != END)
   {
     switch (t[i].type)
     {
       case UNKNOWN_TOKEN:
         fprintf(stderr, "%i: ERROR: UNKNOWN TOKEN\n", t[i].line_num);
         exit(1);
+      case LEFT_PARENTHESIS:
+      	if (t[i+1].type == END)
+      	{
+      		fprintf(stderr, "%i: ERROR: INVALID END TO INPUT\n", t[i].line_num);
+  				exit(1);
+      	}
+      	switch(t[i+1].type)
+      	{
+      		case OR:
+      		case AND:
+      		case PIPE:
+      		case SEMICOLON:
+      		case LESS_THAN:
+      		case GREATER_THAN:
+      			fprintf(stderr, "%i: ERROR: INVALID LEFT PARENTHESIS\n", t[i].line_num);
+  					exit(1);
+      		default:
+      			break;
+      	}
+      	left_paren++;
+      	paren_error_line = t[i].line_num;
+      	i++;
+      	break;
+      case RIGHT_PARENTHESIS:
+      	if (i == 0)
+      	{
+      		fprintf(stderr, "%i: ERROR: INVALID START TO INPUT\n", t[i].line_num);
+  				exit(1);
+      	}
+      	switch(t[i-1].type)
+      	{
+      		case OR:
+      		case AND:
+      		case PIPE:
+      		case SEMICOLON:
+      		case LESS_THAN:
+      		case GREATER_THAN:
+      			fprintf(stderr, "%i: ERROR: INVALID RIGHT PARENTHESIS\n", t[i].line_num);
+  					exit(1);
+      		default:
+      			break;
+      	}
+      	right_paren++;
+      	paren_error_line = t[i].line_num;
+      	i++;
+      	break;
       case OR:
       case AND:
       case PIPE:
       case SEMICOLON:
       case GREATER_THAN:
       case LESS_THAN:
-        if (i+1 < token_stream_size)
+        if (t[i+1].type != END)
         {
         	switch (t[i+1].type)
         	{
@@ -620,18 +677,24 @@ is_valid_token_stream(token_t t, size_t token_stream_size)
         			break;
         	}
         }
-       	break;
       default:
+      	i++;
       	break;
     }
   }
-  if (t[i-1].type != WORD || t[i-1].type != SEMICOLON || t[i-1].type != RIGHT_PARENTHESIS)
+  if (t[i-2].type != WORD_TOKEN && t[i-2].type != SEMICOLON && t[i-2].type != RIGHT_PARENTHESIS)
   {
-  	fprintf(stderr, "%i: ERROR: INVALID END TO INPUT\n", t[i-1].line_num);
+  	fprintf(stderr, "%i: ERROR: INVALID END TO INPUT\n", t[i-2].line_num);
+  	exit(1);
+  }
+  if (left_paren != right_paren)
+  {
+  	fprintf(stderr, "%i: ERROR: PARENTHESIS DO NOT MATCH\n", paren_error_line);
   	exit(1);
   }
 }
-*/ 
+
+
 token_t*
 tokenize(char* string, size_t len, size_t *token_array_size)
 {

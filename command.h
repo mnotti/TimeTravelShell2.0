@@ -44,4 +44,6 @@ token_t* tokenize(char* string, size_t len, size_t *token_array_size);
 // Gets a buffer string
 char* get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t* buflen);
 
+// ERROR Tester
+void is_valid_token_stream(token_t *t);
 
