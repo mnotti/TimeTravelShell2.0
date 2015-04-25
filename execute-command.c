@@ -17,6 +17,36 @@ command_status (command_t c)
 void
 execute_command (command_t c, bool time_travel)
 {
+	switch (c.type){
+		case AND_COMMAND:  
+			handle_and_command(c, time_travel);
+			break;
+     
+    	case SEQUENCE_COMMAND: 
+    		handle_sequence_command(c, time_travel);
+    		break;
+  
+    	case OR_COMMAND: 
+    		handle_or_command(c, time_travel);
+    		break;
+       
+     	case PIPE_COMMAND:  
+     		handle_pipe_command(c, time_travel);
+     		break;
+   
+     	case SIMPLE_COMMAND:
+     		handle_simple_command(c, time_travel);
+     		break;
+
+   		case SUBSHELL_COMMAND:  
+   			handle_subshell_command(c, time_travel);
+   			break;
+   		default:
+   			printf("Error!! An unidentified command has been passed into execute switch statement!\n");
+   			break;
+  
+	}
+
   /* FIXME: Replace this with your implementation.  You may need to
      add auxiliary functions and otherwise modify the source code.
      You can also use external functions defined in the GNU C Library.  */

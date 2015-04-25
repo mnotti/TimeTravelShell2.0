@@ -1,4 +1,7 @@
 // UCLA CS 111 Lab 1 command reading
+// MARKUS NOTTI 904-269-231
+// KYLE BAKER (*INSERT STUDENT ID HERE*)
+
 #include "command.h"
 #include "command-internals.h"
 #include "alloc.h"
@@ -32,6 +35,12 @@ a >b < correctly finds the error, but outputs 0: ERROR: TWO OPPERATORS NEXT TO E
 	because it gets the input as a >b <; So it works, but its not outputting the right
 	line number, not a big deal I don't think.
 */
+
+//GOT A SEG FAULT LIKE WTF?
+/*(a&&b ||
+	c&&
+			d | e && f | g
+a && b)*/
 
 
 
@@ -117,7 +126,7 @@ print_token_type(token_t t)
 void
 stackPush(stackListOp* stackPtr, token_t* data)
 {
-	printf("line num of token being pushed:%i\n", data->line_num);
+	//printf("line num of token being pushed:%i\n", data->line_num);
 
 	//creates the node
 	struct stackNodeOp* newNode = (struct stackNodeOp*) malloc(sizeof(struct stackNodeOp));		//TODO: maybe free???
@@ -128,7 +137,7 @@ stackPush(stackListOp* stackPtr, token_t* data)
 	//base case (Stack is empty)
 	if (stackPtr->tail == NULL)
 	{
-		printf("stack is empty (tail is null)\n");
+		//printf("stack is empty (tail is null)\n");
 
     	newNode->prev = NULL;
 
@@ -142,8 +151,8 @@ stackPush(stackListOp* stackPtr, token_t* data)
 		newNode->prev = stackPtr->tail;
 		stackPtr->tail = newNode;
 	}
-	printf("result of OPPush\n");
-	displayDataFromTopOfStack(stackPtr);
+	//printf("result of OPPush\n");
+	//displayDataFromTopOfStack(stackPtr);
 
 }
 
@@ -159,7 +168,7 @@ stackPushCom(stackListCom* stackPtr, struct command* data)
 	//base case (Stack is empty)
 	if (stackPtr->tail == NULL)
 	{
-		printf("stack is empty (tail is null)\n");
+		//printf("stack is empty (tail is null)\n");
 
     	newNode->prev = NULL;
 
@@ -173,8 +182,8 @@ stackPushCom(stackListCom* stackPtr, struct command* data)
 		newNode->prev = stackPtr->tail;
 		stackPtr->tail = newNode;
 	}
-	printf("result of ComPush\n");
-	displayDataFromTopOfStackCom(stackPtr);
+	//printf("result of ComPush\n");
+	//displayDataFromTopOfStackCom(stackPtr);
 
 }
 
@@ -191,8 +200,8 @@ stackPop(stackListOp* stackPtr)
 		stackPtr->head = NULL;
 		token_t* tempTok = (temp->tok);	
 		free(temp);
-		displayDataFromTopOfStack(stackPtr);
-		printf("result of OPPop\n");
+		//displayDataFromTopOfStack(stackPtr);
+		//printf("result of OPPop\n");
 
 		return tempTok;	
 	}
@@ -203,8 +212,8 @@ stackPop(stackListOp* stackPtr)
 		stackPtr->tail->next = NULL;
 		token_t* tempTok = (temp->tok);	
 		free(temp);
-		printf("result of OPPop\n");
-		displayDataFromTopOfStack(stackPtr);
+		//printf("result of OPPop\n");
+		//displayDataFromTopOfStack(stackPtr);
 
 		return tempTok;
 	}
@@ -224,8 +233,8 @@ stackPopCom(stackListCom* stackPtr)
 		stackPtr->head = NULL;
 		struct command* tempCom = (temp->com);	
 		free(temp);
-		printf("result of comPop\n");
-		displayDataFromTopOfStackCom(stackPtr);
+		//printf("result of comPop\n");
+		//displayDataFromTopOfStackCom(stackPtr);
 		return tempCom;	
 	}
 	else
@@ -235,8 +244,8 @@ stackPopCom(stackListCom* stackPtr)
 		stackPtr->tail->next = NULL;
 		struct command* tempCom = (temp->com);	
 		free(temp);
-		printf("result of comPop\n");
-		displayDataFromTopOfStackCom(stackPtr);
+		//printf("result of comPop\n");
+		//displayDataFromTopOfStackCom(stackPtr);
 
 
 		return tempCom;
@@ -247,12 +256,9 @@ stackPopCom(stackListCom* stackPtr)
 token_t*	
 stackTop(stackListOp* stackPtr)
 {
-	if (stackPtr->tail == NULL)
-		printf("stack is empty\n");
-	else
-	{
+	if (stackPtr->tail != NULL)
 		return (stackPtr->tail->tok);
-	}
+	
 	return NULL;
 }
 
@@ -260,12 +266,8 @@ stackTop(stackListOp* stackPtr)
 struct command*	
 stackTopCom(stackListCom* stackPtr)
 {
-	if (stackPtr->tail == NULL)
-		printf("stack is empty\n");
-	else
-	{
+	if (stackPtr->tail != NULL)
 		return (stackPtr->tail->com);
-	}
 	return NULL;
 }
 
@@ -870,7 +872,7 @@ get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), size_t*
   }
 
   *buflen = pos;
-  printf("%zd\n", pos);
+  //printf("%zd\n", pos);
   return buff;
   
 }
@@ -900,7 +902,7 @@ handleTokenBuf(token_t* tok)
   			//check if opStack is empty
  				//check precedence and pop other stuff if necessary before stacking (TODO)
  				//implement safe guards for empty command stacks...and misplaced operators (TODO)
- 				while ((stackTop(&opStack) != NULL) 
+ 				while ((stackTop(&opStack) != NULL) //CHANGED THIS MUTHA
  					&& (operator_precedence(*(stackTop(&opStack))) >= 0 ) 
  					&& (operator_precedence(*(stackTop(&opStack)))) >= (operator_precedence((tok[i]))))	//keep popping while operators on stack are gre...
    				{
@@ -940,7 +942,7 @@ handleTokenBuf(token_t* tok)
     					case UNKNOWN_TOKEN:
     					case COMMENT:
     					case END:
-    						printf("some token found in operator that is not supported!!!\n");
+    						//printf("some token found in operator that is not supported!!!\n");
     						break;
     				}
 
@@ -960,7 +962,7 @@ handleTokenBuf(token_t* tok)
   			break;
   		case LEFT_PARENTHESIS:
 			stackPush(&opStack, &tok[i]);
-			printf("above prints stack after leftP\n");
+			//printf("above prints stack after leftP\n");
   			i++;
   			break;
   		case RIGHT_PARENTHESIS:	//to implement (TODO) 
@@ -1005,7 +1007,7 @@ handleTokenBuf(token_t* tok)
     					case UNKNOWN_TOKEN:
     					case COMMENT:
     					case END:
-    						printf("some token found in operator that is not supported!!!\n");
+    						//printf("some token found in operator that is not supported!!!\n");
     						break;
     				}
     				stackPushCom(&comStack, newCommand);
@@ -1013,7 +1015,7 @@ handleTokenBuf(token_t* tok)
     			}
     			if (stackTop(&opStack) == NULL)
     			{
-    				printf("ERROR! MISMATCHED PARENTHESES!!!!\n");
+    				//printf("ERROR! MISMATCHED PARENTHESES!!!!\n");
     			}
     			else	//if encounters a left parenthesis
     			{
@@ -1042,18 +1044,18 @@ handleTokenBuf(token_t* tok)
   			int wordCount = 0;
 
   			struct command *newCommand = malloc(sizeof(struct command));	//TODO: maybe free???
-  			newCommand->status = tok[i].line_num; //TODO: not true, just used for testing purposes
+  			newCommand->status = -1; //TODO: not true, just used for testing purposes
   			newCommand->type = SIMPLE_COMMAND;
 
   			int wrdsAlctd = 4;
-  			newCommand->u.word = malloc( sizeof(char*) * (4) );	//TODO: add reallocation if too big 	//TODO: maybe free???
+  			newCommand->u.word = malloc( sizeof(char*) * (wrdsAlctd) );	//TODO: add reallocation if too big 	//TODO: maybe free???
   			newCommand->u.word[wordCount] = tok[i].token_word;
 
   			i++;
   			wordCount++;
 
   			//now cycle thru next tokens until reaching something not a word token
-  			while ((tok[i].type == WORD_TOKEN)  || (tok[i].type == GREATER_THAN) || (tok[i].type == LESS_THAN))	//TODO: account for inputs/outputs/status when creating commands //used to be a condition (i < len)
+  			while (((tok[i].type == WORD_TOKEN)  || (tok[i].type == GREATER_THAN) || (tok[i].type == LESS_THAN))	)//TODO: account for inputs/outputs/status when creating commands //used to be a condition (i < len)
   			{
   				//check if enough space in words
   				//if necessary, realloc
@@ -1072,16 +1074,16 @@ handleTokenBuf(token_t* tok)
   				}
   				else if(tok[i].type == LESS_THAN)
   				{
-  					newCommand->input = tok[i].token_word;
-  					i++;
+  					newCommand->input = tok[i+1].token_word;
+  					i+=2;
   				}
   				else if(tok[i].type == GREATER_THAN)
   				{
-  					newCommand->output = tok[i].token_word;
-  					i++;
+  					newCommand->output = tok[i+1].token_word;
+  					i+=2;
   				}
   			}
-  			newCommand->u.word[wordCount] = "\0";
+  			//newCommand->u.word[wordCount] = "\0";
   			stackPushCom(&comStack, newCommand); 
   			break;
   		}
@@ -1095,7 +1097,7 @@ handleTokenBuf(token_t* tok)
   		case NEWLINE:
   		case END:
   			i++;
-  			printf("encountered the something Unexpected (or the end)\n");
+  			//printf("encountered the something Unexpected (or the end)\n");
   			break;
 
   	}
@@ -1131,10 +1133,10 @@ make_command_stream (int (*get_next_byte) (void *),
 
 
   //prints input string for reference
-  for (i = 0; i < bufflen; i++) {
+  /*for (i = 0; i < bufflen; i++) {
 	printf("%c", inputString[i]);
   }
-  printf("\n");
+  printf("\n");*/
 
   //  ERROR TESTING FOR TOKENIZING WORDS TODO:uncomment?
   size_t token_array_size;
@@ -1143,9 +1145,9 @@ make_command_stream (int (*get_next_byte) (void *),
 	size_t token_ptr_array_size;
 	token_t **token_ptr_array = get_token_arr(t, token_array_size, &token_ptr_array_size);
 	if (token_ptr_array_size || token_ptr_array) {} // TODO: Fix
-	printf("Hello \n");
-	printf("%i \n", (int)token_ptr_array_size);
-	test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
+	//printf("Hello \n");
+	//printf("%i \n", (int)token_ptr_array_size);
+	//test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
 
 
 	//initialize command_stream
@@ -1160,11 +1162,12 @@ make_command_stream (int (*get_next_byte) (void *),
 	while(k < token_ptr_array_size)
 	{
 		command_t rootCommand = handleTokenBuf(token_ptr_array[k]);
-		printf("command points to %p\n", rootCommand);
+		//printf("command points to %p\n", rootCommand);
 
 		struct commandNode* newCommandNode = malloc(sizeof(struct commandNode));	//TODO: maybe free???
 		newCommandNode->command = rootCommand;
 		newCommandNode->next = NULL;
+
 		if (k == 0)
 		{
 			streamy->head = newCommandNode;
