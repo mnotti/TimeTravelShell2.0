@@ -47,3 +47,16 @@ char* get_string(void* get_next_byte_arguement, int (*get_next_byte) (void *), s
 // ERROR Tester
 void is_valid_token_stream(token_t *t);
 
+
+/////////////////////////////////////////////////////
+//
+// EXECUTE COMMANDS
+//
+////////////////////////////////////////////////////
+
+void handle_and_command(command_t c, bool timetravel);
+void handle_or_command(command_t c, bool timetravel);
+void handle_sequence_command(command_t c, bool timetravel);
+void handle_simple_command(command_t c, bool timetravel);
+void handle_subshell_command(command_t c, bool timetravel);
+void handle_pipe_command(command_t c, bool timetravel);
