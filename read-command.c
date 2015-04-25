@@ -1087,7 +1087,7 @@ handleTokenBuf(token_t* tok)
   					i+=2;
   				}
   			}
-  			//newCommand->u.word[wordCount] = "\0";
+  			newCommand->u.word[wordCount] = '\0';
   			stackPushCom(&comStack, newCommand); 
   			break;
   		}
