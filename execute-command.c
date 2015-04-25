@@ -8,6 +8,22 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
+void
+handle_and_command(command_t c, bool time_travel)
+{
+	//execute the first command
+	execute_command(c->u.command[0], time_travel);
+	c->status = WEXITSTATUS(c->u.command[0]->status);
+
+	//if the first statement was succesfully executed
+	if (c->status == 0)
+	{
+		execute_command(c->u.command[1], time_travel);
+		c->status = WEXITSTATUS(c->u.command[1]->status);
+	}
+}
+
+
 int
 command_status (command_t c)
 {
