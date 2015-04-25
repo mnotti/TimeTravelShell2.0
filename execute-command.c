@@ -8,6 +8,32 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
+
+void handle_simple_command(c, time_travel)
+{
+	pid_t pid;
+	// child
+	if (!(pid = fork()))
+	{
+		// Handle Input and Output
+
+		execvp(c->u.word[0], c->u.word);
+	}
+	// error
+	else if (pid == -1)
+	{
+		fprintf(stderr, "ERROR: Fork Failed\n");
+		exit(0); // TODO: Correct exit status?
+	}
+	// parent
+	else 
+	{
+		int status;
+		waitpid(child, &status, 0);
+		c->status = WEXITSTATUS(status);
+	}
+}
+
 void
 handle_and_command(command_t c, bool time_travel)
 {
@@ -80,29 +106,4 @@ execute_command (command_t c, bool time_travel)
      You can also use external functions defined in the GNU C Library.  */
   error (1, 0, "command execution not yet implemented");
   if (c || time_travel) {} // TODO: So the compiler doesn't flip out
-}
-
-void handle_simple_command(c, time_travel)
-{
-	pid_t pid;
-	// child
-	if (!(pid = fork()))
-	{
-		// Handle Input and Output
-
-		execvp(c->u.word[0], c->u.word);
-	}
-	// error
-	else if (pid == -1)
-	{
-		fprintf(stderr, "ERROR: Fork Failed\n");
-		exit(0); // TODO: Correct exit status?
-	}
-	// parent
-	else 
-	{
-		int status;
-		waitpid(child, &status, 0);
-		c->status = WEXITSTATUS(status);
-	}
 }
