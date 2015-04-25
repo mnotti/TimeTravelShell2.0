@@ -152,14 +152,14 @@ handle_pipe_command(command_t c, bool time_travel)
 
 	if (!(pid1 = fork()))	//if child
 	{
-			close(fd[0]);	//close read end
-			if ((dup2(fd[1], 1)) < 0)
+			close(fd[1]);	//close read end
+			if ((dup2(fd[0], 0)) < 0)
 			{
 				fprintf(stderr, "ERROR: Failed to copy file descriptor for output: pipe\n");
 				exit(1);
 			}
-			execute_command(c->u.command[0], time_travel);
-			c->status = WEXITSTATUS(c->u.command[0]->status);
+			execute_command(c->u.command[1], time_travel);
+			c->status = WEXITSTATUS(c->u.command[1]->status);
 			//close(fd[1]);
 
 	}
@@ -167,15 +167,15 @@ handle_pipe_command(command_t c, bool time_travel)
 	{
 		if (!(pid2 = fork()))
 		{
-
-			close(fd[1]);	//close the write-end of pipe
-			if ((dup2(fd[0], 0)) < 0)
+			
+			close(fd[0]);	//close the write-end of pipe
+			if ((dup2(fd[1], 1)) < 0)
 				{
 					fprintf(stderr, "ERROR: Failed to copy file descriptor for input: pipe\n");
 					exit(1);
 				}
 
-			execute_command(c->u.command[1], time_travel);
+			execute_command(c->u.command[0], time_travel);
 			c->status = WEXITSTATUS(c->u.command[0]->status);
 		}
 		else
@@ -184,6 +184,7 @@ handle_pipe_command(command_t c, bool time_travel)
 			close(fd[1]);
 
 			int status;
+
 			waitpid(-1, &status, 0);	
 			waitpid(-1, &status, 0);
 			c->status = status;
