@@ -23,6 +23,18 @@ handle_and_command(command_t c, bool time_travel)
 	}
 }
 
+void
+handle_or_command(command_t c, bool time_travel)
+{
+	execute_command(c->u.command[0], time_travel);
+	c->status = WEXITSTATUS(c->u.command[0]->status);
+	if (c->status != 0)
+	{
+		execute_command(c->u.command[1], time_travel);
+		c->status = WEXITSTATUS(c->u.command[1]->status);
+	}
+}
+
 
 int
 command_status (command_t c)
