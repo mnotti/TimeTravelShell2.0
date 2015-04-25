@@ -1,4 +1,1 @@
-(a&&b ||
-	c&&
-			d | e && f | g
-a && b)
+echo a ; echo b && echo a

@@ -1045,6 +1045,8 @@ handleTokenBuf(token_t* tok)
 
   			struct command *newCommand = malloc(sizeof(struct command));	//TODO: maybe free???
   			newCommand->status = -1; //TODO: not true, just used for testing purposes
+  			newCommand->input = NULL;
+  			newCommand->output = NULL;
   			newCommand->type = SIMPLE_COMMAND;
 
   			int wrdsAlctd = 4;
