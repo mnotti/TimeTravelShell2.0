@@ -12,6 +12,8 @@
 #include <ctype.h>
 #include <string.h>
 
+//fuck my life 
+
 
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
