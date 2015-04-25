@@ -147,8 +147,10 @@ handle_pipe_command(command_t c, bool time_travel)
 
 	int fd[2];
 	pipe(fd);
-	int pid;
-	if (!(pid = fork())	//if child
+	int pid1;
+	int pid2;
+
+	if (!(pid1 = fork()))	//if child
 	{
 			close(fd[0]);	//close read end
 			if ((dup2(fd[1], 1)) < 0)
@@ -156,25 +158,39 @@ handle_pipe_command(command_t c, bool time_travel)
 				fprintf(stderr, "ERROR: Failed to copy file descriptor for output: pipe\n");
 				exit(1);
 			}
-			execute_command(c->command[0], time_travel);
-			c->status = WEXITSTATUS(c->command[0]->status);
-			close(fd[1]);
+			execute_command(c->u.command[0], time_travel);
+			c->status = WEXITSTATUS(c->u.command[0]->status);
+			//close(fd[1]);
 
 	}
 	else	//parent
 	{
-		close(fd[1]);	//close the write-end of pipe
-		if ((dup2(fd[0], 0)) < 0)
-			{
-				fprintf(stderr, "ERROR: Failed to copy file descriptor for input: pipe\n");
-				exit(1);
-			}
-		execute_command(c->command[1], time_travel);
-		c->status = WEXITSTATUS(c->command[0]->status);
-		close(fd[0]);
+		if (!(pid2 = fork()))
+		{
 
+			close(fd[1]);	//close the write-end of pipe
+			if ((dup2(fd[0], 0)) < 0)
+				{
+					fprintf(stderr, "ERROR: Failed to copy file descriptor for input: pipe\n");
+					exit(1);
+				}
 
+			execute_command(c->u.command[1], time_travel);
+			c->status = WEXITSTATUS(c->u.command[0]->status);
+		}
+		else
+		{
+			close(fd[0]);
+			close(fd[1]);
+
+			int status;
+			waitpid(-1, &status, 0);	
+			waitpid(-1, &status, 0);
+			c->status = status;
+
+		}
 	}
+		
 
 }
 
