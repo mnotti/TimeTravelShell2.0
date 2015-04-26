@@ -495,6 +495,7 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 				case OR:
 				case AND:
 				case SEMICOLON:
+				case LEFT_PARENTHESIS:
 					// Count how many spaces to ignore when allocating via newline_count
 					while (t[pos].type == NEWLINE && pos < token_size)
 					{
@@ -515,12 +516,20 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 						token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
 
 						num_token_streams++;
-						tokens_in_stream = 0;
 						max_token_bytes = 20 * sizeof(token_t);
 						token_ptr_array[num_token_streams] = checked_malloc(max_token_bytes);
 						// Ignore the rest of the newlines
 						while (t[pos].type == NEWLINE && pos < token_size)
 							pos++;
+						// If it didn't get to the end of the file, reset to 0
+						if (pos < token_size)
+							tokens_in_stream = 0;
+					}
+					// Ignore Newline for alone parenthesis
+					else if (pos+1 < token_size && t[pos+1].type == RIGHT_PARENTHESIS)
+					{
+						newline_count++;
+						pos++;
 					}
 					// Change newline to a ; token
 					else
@@ -538,7 +547,12 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 
 		// Ignore if it's a comment
 		else if (t[pos].type == COMMENT)
+		{
 			pos++;
+			// Increase token stream size if this token is the last one
+			if (pos >= token_size)
+				num_token_streams++;
+		}
 
 		// If its anything but a newline
 		else
@@ -548,6 +562,10 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 			pos++;
 			if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
 				token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+
+			// Increase token stream size if this token is the last one
+			if (pos >= token_size)
+				num_token_streams++;
 		}
 
 		if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
@@ -555,18 +573,18 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 	}
 
 	if ((tokens_in_stream+2) * sizeof(token_t) >= max_token_bytes)
-		token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
-	if (token_ptr_array[num_token_streams][tokens_in_stream-1].type != SEMICOLON)
+		token_ptr_array[num_token_streams-1] = checked_grow_alloc(token_ptr_array[num_token_streams-1], &max_token_bytes);
+	if (token_ptr_array[num_token_streams-1][tokens_in_stream].type != SEMICOLON)
 	{
-		token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
-		token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
+		token_ptr_array[num_token_streams-1][tokens_in_stream].type = SEMICOLON;
+		token_ptr_array[num_token_streams-1][tokens_in_stream+1].type = END;
 	}
 
 	else 
 	{
 		if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
-			token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
-		token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+			token_ptr_array[num_token_streams-1] = checked_grow_alloc(token_ptr_array[num_token_streams-1], &max_token_bytes);
+		token_ptr_array[num_token_streams-1][tokens_in_stream+1].type = END;
 	}
 
 	// Check if you need to realloc
@@ -574,9 +592,8 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 	  token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
 
 	// Put in the last token stream
-	token_ptr_array[num_token_streams+1] = checked_malloc(sizeof(token_t));
-	token_ptr_array[num_token_streams+1][0].type = END;
-	num_token_streams++;
+	token_ptr_array[num_token_streams] = checked_malloc(sizeof(token_t));
+	token_ptr_array[num_token_streams][0].type = END;
 	*token_ptr_arr_size = num_token_streams;
 
 	size_t iter;
