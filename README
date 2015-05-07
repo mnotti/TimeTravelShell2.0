@@ -1,5 +1,21 @@
-This is a skeleton for CS 111 Lab 1.
+Markus Notti 904269231 |
+Kyle Baker 604273748   |
+========================
+*it seems our lab1A readme was lost somewhere along the way after we turned it in
+with lab 1A. So here is the readme for lab 1B.
 
-Replace this README file with notes on your implementation.
-Mentions any special features or limitations.
-Hi
+Readme for Lab 1B:
+
+For this part of the lab, we essentially made 1 big switch statement in execute_command.
+Each one of the cases would be types of commands that could be passed in. For each of the cases, it would call
+the respective handler function which would handle the command.  With the exception of simple command, the command
+handlers would call execute_command recursively until the commands became simple enough to be executed.
+
+In order to execute the simple commands, the main process would be forked and execvp would be called on the
+command, executing it and returning a status value which is received by the waiting parent process and stored in the
+command's status.
+
+For input and output redirection as well as piping, we employed the use of the function dup2(args), which essentially
+replaced stdout and stdin so that the files which were being written to or read from could be written to or read from
+respectively.
+

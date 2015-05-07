@@ -502,11 +502,31 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 						newline_count++;
 						pos++;
 					}
+					if (pos == token_size)
+					{
+						if (token_ptr_array[num_token_streams][tokens_in_stream-1].type != SEMICOLON)
+						{
+							if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+								token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+							token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
+							if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+								token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+							token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
+						}
+						else
+						{
+							if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+								token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+							token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+						}
+				
+						num_token_streams++;
+					}
 					break;
 				// If it ends in anything else
 				default:
 					// If the next thing is a newline then break off the token stream
-					if (pos+1 < token_size && t[pos+1].type == NEWLINE)
+					if (pos+1 == token_size || t[pos+1].type == NEWLINE)
 					{
 						if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
 							token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
@@ -525,6 +545,7 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 						if (pos < token_size)
 							tokens_in_stream = 0;
 					}
+
 					// Ignore Newline for alone parenthesis
 					else if (pos+1 < token_size && t[pos+1].type == RIGHT_PARENTHESIS)
 					{
@@ -562,16 +583,33 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 			pos++;
 			if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
 				token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
-
-			// Increase token stream size if this token is the last one
-			if (pos >= token_size)
+			if(pos == token_size)
+			{
+				if (token_ptr_array[num_token_streams][tokens_in_stream-1].type != SEMICOLON)
+				{
+					if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+						token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+					token_ptr_array[num_token_streams][tokens_in_stream].type = SEMICOLON;
+					if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+						token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+					token_ptr_array[num_token_streams][tokens_in_stream+1].type = END;
+				}
+				else
+				{
+					if (tokens_in_stream * sizeof(token_t) >= max_token_bytes)
+						token_ptr_array[num_token_streams] = checked_grow_alloc(token_ptr_array[num_token_streams], &max_token_bytes);
+					token_ptr_array[num_token_streams][tokens_in_stream].type = END;
+				}
+				
 				num_token_streams++;
+			}
 		}
 
 		if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
 			token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
 	}
 
+/*
 	if ((tokens_in_stream+2) * sizeof(token_t) >= max_token_bytes)
 		token_ptr_array[num_token_streams-1] = checked_grow_alloc(token_ptr_array[num_token_streams-1], &max_token_bytes);
 	if (token_ptr_array[num_token_streams-1][tokens_in_stream].type != SEMICOLON)
@@ -586,7 +624,7 @@ get_token_arr(token_t *t, size_t token_size, size_t *token_ptr_arr_size)
 			token_ptr_array[num_token_streams-1] = checked_grow_alloc(token_ptr_array[num_token_streams-1], &max_token_bytes);
 		token_ptr_array[num_token_streams-1][tokens_in_stream+1].type = END;
 	}
-
+*/
 	// Check if you need to realloc
 	if (num_token_streams * sizeof(token_t_ptr) >= max_ptr_bytes)
 	  token_ptr_array = checked_grow_alloc(token_ptr_array, &max_ptr_bytes);
@@ -1047,20 +1085,21 @@ handleTokenBuf(token_t* tok)
 
     					newCommand->type = SUBSHELL_COMMAND;
     					newCommand->u.subshell_command = command1;
-  						newCommand->status = -1;	//TODO change statussss
+  						newCommand->status = -1;
 
-  						//search for greater than
-  						if(tok[i+1].type == LESS_THAN)
-  						{
-  							newCommand->u.subshell_command->input = tok[i+2].token_word;
-  							i+=2;
-  						}
-  						else if(tok[i+1].type == GREATER_THAN)
-  						{
-  							newCommand->u.subshell_command->output = tok[i+2].token_word;
-  							i+=2;
-  						}
+						//search for greater than/ less than
+						if(tok[i+1].type == LESS_THAN)
+						  {
+						    newCommand->u.subshell_command->input = tok[i+2].token_word;
+						    i+=2;
+						  }
+						else if(tok[i+1].type == GREATER_THAN)
+						  {
+						    newCommand->u.subshell_command->output = tok[i+2].token_word;
+						    i+=2;
+						  }
 
+						
   						stackPushCom(&comStack, newCommand);
   					}
 
