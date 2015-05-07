@@ -17,6 +17,171 @@
    static function definitions, etc.  */
 
 
+////////////////////////////////////////////////////
+//
+//		QUEUE IMPLEMENTATION
+//
+///////////////////////////////////////////////////
+
+void
+push_graph_node_queue(graph_node_queue* gnq, graph_node* gn) {
+    queue_node *newnode = (queue_node*) malloc(sizeof(queue_node));
+    newnode->next = NULL;
+    newnode->gn = gn;
+    if (gnq->head == NULL)
+    {
+        gnq->head = newnode;
+        gnq->tail = newnode;
+    }
+    else {
+        gnq->tail->next = newnode;
+        gnq->tail = newnode;
+    }
+}
+
+void
+pop_graph_node_queue(graph_node_queue* gnq)
+{
+    // Can't pop an empy queue
+    if (gnq->head == NULL)
+        return;
+    
+    queue_node* tmp = gnq->head;
+    gnq->head = gnq->head->next;
+    free(tmp->gn);
+    free(tmp);
+    // If you deleted the last one, make the tail NULL
+    if (gnq->head == NULL)
+        gnq->tail = NULL;
+}
+
+graph_node*
+top_graph_node_queue(graph_node_queue* gnq)
+{
+    if (gnq->head == NULL)
+        return NULL;
+    
+    return gnq->head->gn;
+}
+
+void
+destroy_graph_node_queue(graph_node_queue* gnq)
+{
+    queue_node* curr = gnq->head;
+    while (curr != NULL)
+    {
+        queue_node* tmp = curr;
+        free(curr->gn);
+        free(curr);
+        curr = tmp->next;
+        
+        if (curr == NULL)
+            gnq->tail = NULL;
+    }
+    gnq->head = NULL;
+    free(gnq);
+}
+
+
+void
+test_queue()
+{
+	graph_node_queue *q = (graph_node_queue*) malloc(sizeof(graph_node_queue));
+    q->head = NULL;
+    q->tail = NULL;
+    
+    printf("Queue Created\n");
+    graph_node* gnn1 = (graph_node*) malloc(sizeof(graph_node));
+    graph_node* gnn2 = (graph_node*) malloc(sizeof(graph_node));
+    graph_node* gnn3 = (graph_node*) malloc(sizeof(graph_node));
+    
+    gnn1->pid = 1;
+    gnn2->pid = 2;
+    gnn3->pid = 3;
+
+    printf("PUSH TEST\n");
+    
+    push_graph_node_queue(q, gnn1);
+    print_contents_of_queue(q);
+
+    push_graph_node_queue(q, gnn2);
+    print_contents_of_queue(q);
+
+    push_graph_node_queue(q, gnn3);
+    print_contents_of_queue(q);
+    
+    printf("POP/TOP TEST\n");
+    graph_node* gnp;
+
+    gnp = top_graph_node_queue(q);
+    printf("TOP\n");
+    print_contents_of_graph_node(gnp);
+
+    pop_graph_node_queue(q);
+    print_contents_of_queue(q);
+	gnp = top_graph_node_queue(q);
+	printf("TOP\n");
+    print_contents_of_graph_node(gnp);
+
+    pop_graph_node_queue(q);
+    print_contents_of_queue(q);
+	gnp = top_graph_node_queue(q);
+	printf("TOP\n");
+    print_contents_of_graph_node(gnp);
+
+    pop_graph_node_queue(q);
+    print_contents_of_queue(q);
+	gnp = top_graph_node_queue(q);
+	printf("TOP\n");
+    print_contents_of_graph_node(gnp);
+}
+
+void
+print_contents_of_queue(graph_node_queue* gnq)
+{
+	if (gnq->head == NULL)
+	{
+    	printf("Head = NULL\n");
+    	if (gnq->tail != NULL)
+    	{
+    		printf("ERROR: HEAD IS NULL BUT TAIL IS NOT\n");
+    		return;
+    	}
+    	printf("Tail = NULL\n");
+	}
+	else if(gnq->tail == NULL)
+	{
+		printf("ERROR: TAIL IS NULL WHILE HEAD IS NOT\n");
+		return;
+	}
+    else
+    {
+    	printf("Head\n-----\n");
+    	printf("Address: %p \t pid: %i \n", gnq->head->gn, (int)gnq->head->gn->pid);
+    	printf("Tail\n-----\n");
+    	printf("Address: %p \t pid: %i \n", gnq->tail->gn, (int)gnq->tail->gn->pid);
+    	printf("QUEUE FRONT\n-------------\n");
+    	queue_node* tmp = gnq->head;
+    	while(tmp != NULL)
+    	{
+    		printf("Address: %p \t pid: %i \n", tmp->gn, (int)tmp->gn->pid);
+    		tmp = tmp->next;
+    	}
+    	printf("-------------\nQUEUE BOTTOM\n");
+    }
+}
+
+void print_contents_of_graph_node(graph_node* gn)
+{
+	if (gn == NULL)
+	{
+		printf("NULL\n");
+		return;
+	}
+
+	printf("Address: %p \t pid: %i \n", gn, (int)gn->pid);
+}
+
 void handle_simple_command(command_t c, bool time_travel)
 {
 	if (time_travel)

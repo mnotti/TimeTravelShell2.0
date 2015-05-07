@@ -1,4 +1,6 @@
 // UCLA CS 111 Lab 1 command internals
+#include <unistd.h>
+#include <sys/types.h>
 
 enum command_type
   {
@@ -59,7 +61,6 @@ typedef struct stackListCom{
 }stackListCom;
 
 
-
 // Data associated with a command.
 struct command
 {
@@ -95,3 +96,36 @@ typedef struct command_stream{
   struct commandNode* tail;
   struct commandNode* cursor;
 }command_stream;
+
+
+
+
+//////////////////////////////////////////////////
+//
+//       GRAPH NODE/QUEUE STUFF
+//
+//////////////////////////////////////////////////
+
+struct graphNode
+{
+  struct command command_t;
+  struct graphNode** before;
+  pid_t pid;
+};
+
+struct queueNode {
+    struct graphNode* gn;
+    struct queueNode* next;
+};
+
+struct graphNodeQueue {
+    struct queueNode* head;
+    struct queueNode* tail;
+};
+
+struct dependencyGraph {
+  struct graphNodeQueue* no_dependencies;
+  struct graphNodeQueue* dependencies;
+};
+
+

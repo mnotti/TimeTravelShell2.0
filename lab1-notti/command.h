@@ -7,6 +7,11 @@ typedef struct command *command_t;
 typedef struct command_stream *command_stream_t;
 typedef struct token token_t;
 typedef struct token *token_t_ptr;
+typedef struct graphNode graph_node;
+typedef struct queueNode queue_node;
+typedef struct graphNodeQueue graph_node_queue;
+typedef struct dependencyGraph dependency_graph;
+
 
 
 /* Create a command stream from GETBYTE and ARG.  A reader of
@@ -60,3 +65,19 @@ void handle_sequence_command(command_t c, bool timetravel);
 void handle_simple_command(command_t c, bool timetravel);
 void handle_subshell_command(command_t c, bool timetravel);
 void handle_pipe_command(command_t c, bool timetravel);
+
+
+////////////////////////////////////////////////////
+//
+//	QUEUE
+//
+///////////////////////////////////////////////////
+
+void push_graph_node_queue(graph_node_queue* gnq, graph_node* gn);
+void pop_graph_node_queue(graph_node_queue* gnq);
+graph_node* top_graph_node_queue(graph_node_queue* gnq);
+void destroy_graph_node_queue(graph_node_queue* gnq);
+//Testing
+void test_queue();
+void print_contents_of_queue(graph_node_queue* gnq);
+void print_contents_of_graph_node(graph_node* gn);

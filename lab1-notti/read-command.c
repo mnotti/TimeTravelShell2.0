@@ -1,6 +1,6 @@
 // UCLA CS 111 Lab 1 command reading
 // MARKUS NOTTI 904-269-231
-// KYLE BAKER (*INSERT STUDENT ID HERE*)
+// KYLE BAKER 604-273-748
 
 #include "command.h"
 #include "command-internals.h"
@@ -12,7 +12,6 @@
 #include <ctype.h>
 #include <string.h>
 
-//fuck my life 
 
 
 /* FIXME: You may need to add #include directives, macro definitions,
