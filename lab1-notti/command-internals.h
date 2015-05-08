@@ -128,4 +128,18 @@ struct dependencyGraph {
   struct graphNodeQueue* dependencies;
 };
 
+////////////////////////////////////////////
+//                                        //
+//            BST NODE STUFF              //
+//                                        //
+////////////////////////////////////////////
+
+struct bstNode
+{
+  struct bstNode* left;
+  struct bstNode* right;
+  struct graphNode* graphNody;
+  char* word;
+
+};
 

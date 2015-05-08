@@ -53,19 +53,30 @@ main (int argc, char **argv)
 
   command_t last_command = NULL;
   command_t command;
-  while ((command = read_command_stream (command_stream)))
+  //ADDED BELOW FOR TIME TRAVEL (PART 1C)
+   if(time_travel)    //ADDED
+   {
+      int finalStatus = 0;
+      finalStatus = createAndExecuteGraph(command_stream);
+      return finalStatus;
+   }
+   //ADDED ABOVE FOR TIME TRAVEL (PART 1C)
+   else
+   {
+    while ((command = read_command_stream (command_stream)))
     {
-      if (print_tree)
-	{
-	  printf ("# %d\n", command_number++);
-	  print_command (command);
-	}
-      else
-	{
-	  last_command = command;
-	  execute_command (command, time_travel);
-	}
+        if (print_tree)
+	       {
+	         printf ("# %d\n", command_number++);
+	         print_command (command);
+	       }
+          else
+	       {
+	         last_command = command;
+	         execute_command (command, time_travel);
+	       }
     }
+  }
 
   return print_tree || !last_command ? 0 : command_status (last_command);
 }

@@ -16,6 +16,191 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
+////////////////////////////////////////////////////
+//
+//		BST IMPLEMENTATION
+//
+///////////////////////////////////////////////////
+
+//With the BST, you have to initialize it manually with:
+	/*
+	bstNode* headOfTree = (bstNode*) malloc(sizeof(bstNode));
+	headOfTree->left = NULL;
+	headOfTree->right = NULL;
+	headOfTree->word = NULL;
+	*/
+
+void
+destroyBst(bst_node* head)
+{
+	if (head == NULL)
+    	return;
+    bst_node* it = head;
+    //recursively free all nodes
+    destroyBst(it->left);
+    destroyBst(it->right);
+
+    printf("freeing BST node with word: %s\n", head->word);
+    free(head);
+    printf("freed\n\n");
+}
+
+void
+addNewBstNode(bst_node* head, char* word, graph_node* graphNody)
+{	
+	if(head->word == NULL)
+	{
+
+		head->graphNody = graphNody;
+		head->word = word;
+		return;
+
+	}
+	else
+	{
+		bst_node* it = head;
+		while (it != NULL)
+		{
+			int cmpVal = strcmp(word, it->word);
+			if (cmpVal < 0)
+			{	
+				//word < it->word
+				if(it->left != NULL)
+					it = it->left;
+				else
+				{
+					bst_node* newBstNode = (bst_node*) malloc(sizeof(bst_node));
+					newBstNode->left = NULL;
+					newBstNode->right = NULL;
+					newBstNode->graphNody = graphNody;
+					newBstNode->word = word;
+
+					it->left = newBstNode;
+					return;
+				}
+			}
+			else if(cmpVal > 0)
+			{
+				//str1 > it->word
+				if(it->right != NULL)
+					it = it->right;
+				else
+				{
+					bst_node* newBstNode = (bst_node*) malloc(sizeof(bst_node));
+					newBstNode->left = NULL;
+					newBstNode->right = NULL;
+					newBstNode->graphNody = graphNody;
+					newBstNode->word = word;
+
+					it->right = newBstNode;
+					return;					
+				}
+			}
+			else
+			{
+				//str1 == it->word
+				printf("WARNING: Found the same word(shouldn't be adding a newNode if word is already in the BST\n");
+					return;
+			}
+		}
+	
+	}
+}
+
+graph_node* 
+searchBst(bst_node* head, char* word)
+{
+	if(head->word == NULL)
+	{
+		return NULL;
+	}
+	else
+	{
+		bst_node* it = head;
+		while (it != NULL)
+		{
+			int cmpVal = strcmp(word, it->word);
+			if (cmpVal < 0)
+			{	
+				//word < it->word
+				if(it->left != NULL)
+					it = it->left;
+				else
+				{
+					//not found
+					return NULL;
+				}
+			}
+			else if(cmpVal > 0)
+			{
+				//str1 > it->word
+				if(it->right != NULL)
+					it = it->right;
+				else
+				{
+					//not found
+					return NULL;					
+				}
+			}
+			else
+			{
+				//str1 == it->word
+				printf("Found word\n");
+					return it->graphNody;
+			}
+		}
+	
+	}
+	return NULL;
+}
+/*
+int 
+searchBst(bst_node* head, char* word)
+{
+	if(head->word == NULL)
+	{
+		return 0;
+	}
+	else
+	{
+		bst_node* it = head;
+		while (it != NULL)
+		{
+			int cmpVal = strcmp(word, it->word);
+			if (cmpVal < 0)
+			{	
+				//word < it->word
+				if(it->left != NULL)
+					it = it->left;
+				else
+				{
+					//not found
+					return 0;
+				}
+			}
+			else if(cmpVal > 0)
+			{
+				//str1 > it->word
+				if(it->right != NULL)
+					it = it->right;
+				else
+				{
+					//not found
+					return 0;					
+				}
+			}
+			else
+			{
+				//str1 == it->word
+				printf("Found word\n");
+					return 1;
+			}
+		}
+	
+	}
+}
+*/
+
 
 ////////////////////////////////////////////////////
 //
@@ -182,7 +367,63 @@ void print_contents_of_graph_node(graph_node* gn)
 	printf("Address: %p \t pid: %i \n", gn, (int)gn->pid);
 }
 
-void handle_simple_command(command_t c, bool time_travel)
+////////////////////////////////////////////////////////////////////////////////
+//
+//		1C IMPLEMENTATION (PROCESSING COMMAND TREES AND FINDING DEPENDENCIES)
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+int 
+createAndExecuteGraph(command_stream_t command_stream)
+{
+	int final_status;
+	final_status = 0;
+	if(command_stream)
+	{
+
+	}
+	//PSEUDO
+
+	//1)
+	//INITIALIZE THE DEPENDENCY GRAPH 
+	
+		//1a)
+		//INITIALIZE THE DEPENDENCY QUEUE AND THE NON-DEPENDENCY QUEUE
+
+	//2)
+	//create and read list and a write list by initializing the first nodes with
+	//no values
+
+	//3)
+	//IMPLEMENT THE PROCESS COMMAND RECURSIVE FUNCTION GIVEN BY TUAN FOR EACH OF THE COMMAND TREES IN 
+	//COMMAND STREAM
+
+		//3a)
+		//MUST CREATE A NEW GRAPH NODE FOR EACH AND ADD THE GRAPH NODE TO EITHER THE DEPENDENCY OR 
+		//NON-DEPENDENCY QUEUE AFTER SEARCHING THRU BOTH THE READ AND THE WRITE LISTS FOR INPUTS AND OUTPUTS
+
+	//4)
+	//EXECUTE THE QUEUES
+
+
+
+
+
+
+	//then 
+	return final_status;
+}
+
+
+///////////////////////////////////////
+//
+//		HANDLING COMMAND TYPES
+//
+///////////////////////////////////////
+
+void 
+handle_simple_command(command_t c, bool time_travel)
 {
 	if (time_travel)
 	{}

@@ -12,6 +12,7 @@ typedef struct queueNode queue_node;
 typedef struct graphNodeQueue graph_node_queue;
 typedef struct dependencyGraph dependency_graph;
 
+typedef struct bstNode bst_node;
 
 
 /* Create a command stream from GETBYTE and ARG.  A reader of
@@ -59,12 +60,12 @@ void is_valid_token_stream(token_t *t);
 //
 ////////////////////////////////////////////////////
 
-void handle_and_command(command_t c, bool timetravel);
-void handle_or_command(command_t c, bool timetravel);
-void handle_sequence_command(command_t c, bool timetravel);
-void handle_simple_command(command_t c, bool timetravel);
-void handle_subshell_command(command_t c, bool timetravel);
-void handle_pipe_command(command_t c, bool timetravel);
+void handle_and_command(command_t c, bool time_travel);
+void handle_or_command(command_t c, bool time_travel);
+void handle_sequence_command(command_t c, bool time_travel);
+void handle_simple_command(command_t c, bool time_travel);
+void handle_subshell_command(command_t c, bool time_travel);
+void handle_pipe_command(command_t c, bool time_travel);
 
 
 ////////////////////////////////////////////////////
@@ -81,3 +82,23 @@ void destroy_graph_node_queue(graph_node_queue* gnq);
 void test_queue();
 void print_contents_of_queue(graph_node_queue* gnq);
 void print_contents_of_graph_node(graph_node* gn);
+
+///////////////////////////////////////////////////
+//
+//		BST
+//
+///////////////////////////////////////////////////
+
+void addNewBstNode(bst_node* head, char* word, graph_node* graphNody);	//adds a new BST node (only appropriate when it's not )
+graph_node* searchBst(bst_node* head, char* word);	//returns 1 if found, 0 if not found 
+//TODO: should retrun the graph node which the found node points to (a node which the searcher is probably dependent upon)
+void destroyBst(bst_node* head);
+//must make sure the head node gets manually freed outside of destroy BST
+
+///////////////////////////////////////////////////
+//
+//		EXECUTING AND CREATING GRAPH
+//
+///////////////////////////////////////////////////
+
+int createAndExecuteGraph(command_stream_t command_stream);
