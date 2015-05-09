@@ -316,6 +316,34 @@ execute_graph(dependency_graph* DG)
 		}
 
 	}
+
+
+	int i;
+	for (i = 0; i < DG->no_dependencies->size; i++)
+	{
+		pidarr[i] = fork();
+		if (pidarr[i] == 0)
+		{
+			command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
+			pop_graph_node_queue(DG->no_dependencies);
+			execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
+			exit(0);	// TODO: Change exit status?
+		}
+		else if (pidarr[i] < 0)
+		{
+			fprintf(stderr, "ERROR FORKING\n");				// TODO: Change error?
+    		exit(1);
+		}
+	}
+
+	// Wait for the processes to finish
+	int j;
+	status = 0;
+	for (j = 0; j < i; j++)
+	{
+		waitpid(pidarr[j], &status, WNOHANG);
+	}
+		
 	return status;
 }
 
