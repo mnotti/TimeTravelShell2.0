@@ -18,6 +18,9 @@
    static function definitions, etc.  */
 
 int beforeCount = 0;
+int graphNodesToAllocate = 8;
+
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -33,7 +36,7 @@ processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node
 	if(command->type == SIMPLE_COMMAND)
 	{
 		int i = 1;
-		while(command->u.word[i][0] != '\0')
+		while(command->u.word[i] != '\0')
 		{
 			if(command->u.word[i][0] != '-')
 			{
@@ -41,12 +44,21 @@ processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node
 				//search the read/write list for that word...adding if necessary 
 				if ((temp2 = searchOppositeList(headOfWriteTree, command->u.word[i])) && (graphyTemp != temp2))
 				{
+					if (beforeCount >= graphNodesToAllocate)
+  					{
+  						graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  						graphNodesToAllocate += 4;
+  					}
 					graphyTemp->before[beforeCount] = temp2;
-					//add to queue
 					beforeCount++;
 				}
 				if ((temp2 = searchSameList(headOfReadTree, command->u.word[i], graphyTemp)))
 				{
+					if (beforeCount >= graphNodesToAllocate)
+  					{
+  						graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  						graphNodesToAllocate += 4;
+  					}
 					graphyTemp->before[beforeCount] = temp2;
 					beforeCount++;
 				}
@@ -60,11 +72,21 @@ processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node
 			//search the trees for input 
 			if ((temp2 = searchOppositeList(headOfWriteTree, command->input)) && (graphyTemp != temp2))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}
 			if ((temp2 = searchSameList(headOfReadTree, command->input, graphyTemp)))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}			
@@ -74,11 +96,21 @@ processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node
 			//search the trees for output 
 			if ((temp2 = searchOppositeList(headOfReadTree, command->output)) && (graphyTemp != temp2))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}
 			if ((temp2 = searchSameList(headOfWriteTree, command->output, graphyTemp)))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}				
@@ -93,11 +125,21 @@ processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node
 			//search the trees for input 
 			if ((temp2 = searchOppositeList(headOfWriteTree, command->input)) && (graphyTemp != temp2))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}
 			if ((temp2 = searchSameList(headOfReadTree, command->input, graphyTemp)))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}
@@ -107,11 +149,21 @@ processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node
 			//search the trees for output 
 			if ((temp2 = searchOppositeList(headOfReadTree, command->output)) && (graphyTemp != temp2))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}
 			if ((temp2 = searchSameList(headOfWriteTree, command->output, graphyTemp)))
 			{
+				if (beforeCount >= graphNodesToAllocate)
+  				{
+  					graphyTemp->before = realloc(graphyTemp->before,  sizeof(graph_node*) * (graphNodesToAllocate + 4));
+  					graphNodesToAllocate += 4;
+  				}
 				graphyTemp->before[beforeCount] = temp2;
 				beforeCount++;
 			}				
@@ -187,6 +239,8 @@ createAndExecuteGraph(command_stream_t command_stream)
     {
     	
     	graph_node* graphyTemp = (graph_node*)malloc(sizeof(graph_node));
+    	graphyTemp->before = malloc( sizeof(graph_node*) * (graphNodesToAllocate) );	//TODO: add reallocation if too big 	//TODO: maybe free???
+  
     	graphyTemp->command = command;
     	graphyTemp->pid = -1;
     	
