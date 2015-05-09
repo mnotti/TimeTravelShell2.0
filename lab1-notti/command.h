@@ -103,15 +103,7 @@ graph_node* searchOppositeList(bst_node* head, char* word);
 ///////////////////////////////////////////////////
 
 int createAndExecuteGraph(command_stream_t command_stream);
-<<<<<<< Updated upstream
+
 int execute_graph(dependency_graph* DG);
-=======
+
 void processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node* headOfWriteTree, bst_node* headOfReadTree, dependency_graph* dependencyJones);
-
-
-
-
-
-
-
->>>>>>> Stashed changes

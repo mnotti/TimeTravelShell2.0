@@ -228,7 +228,7 @@ execute_graph(dependency_graph* DG)
 			pidarr[i] = fork();
 			if (pidarr[i] == 0)
 			{
-				command_t tmp = top_graph_node_queue(DG->no_dependencies)->command_t;
+				command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
 				pop_graph_node_queue(DG->no_dependencies);
 				execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
 				exit(0);	// TODO: Change exit status?
