@@ -2,6 +2,7 @@
 
 #include "command.h"
 #include "command-internals.h"
+#include "alloc.h"
 
 #include <error.h>
 #include <unistd.h>
@@ -61,13 +62,13 @@ createAndExecuteGraph(command_stream_t command_stream)
 	//2)
 	//create and read list and a write list by initializing the first nodes with
 	//no values
-	bstNode* headOfReadTree = (bstNode*) malloc(sizeof(bstNode));
+	bst_node* headOfReadTree = (bst_node*) malloc(sizeof(bst_node));
 	
 	headOfReadTree->left = NULL;
 	headOfReadTree->right = NULL;
 	headOfReadTree->word = NULL;
 
-	bstNode* headOfWriteTree = (bstNode*) malloc(sizeof(bstNode));
+	bst_node* headOfWriteTree = (bst_node*) malloc(sizeof(bst_node));
 	
 	headOfWriteTree->left = NULL;
 	headOfWriteTree->right = NULL;
@@ -91,6 +92,63 @@ createAndExecuteGraph(command_stream_t command_stream)
 
 	//then 
 	return final_status;
+}
+
+int
+execute_graph(dependency_graph* DG)
+{
+	int status = 0;
+	size_t to_malloc = DG->no_dependencies->size * DG->dependencies->size;
+	pid_t *pidarr = checked_malloc(sizeof(pid_t) * to_malloc);
+	//int *statusarr = checked_malloc(sizeof(int) * to_malloc);
+	while (DG->dependencies->size != 0)
+	{
+		// Spawn processes for the runnable (in no_dependencies)
+		int i;
+		for (i = 0; i < DG->no_dependencies->size; i++)
+		{
+			pidarr[i] = fork();
+			if (pidarr[i] == 0)
+			{
+				command_t tmp = top_graph_node_queue(DG->no_dependencies)->command_t;
+				pop_graph_node_queue(DG->no_dependencies);
+				execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
+				exit(0);	// TODO: Change exit status?
+			}
+			else if (pidarr[i] < 0)
+			{
+				fprintf(stderr, "ERROR FORKING\n");				// TODO: Change error?
+        		exit(1);
+			}
+		}
+
+		// Wait for the processes to finish
+		int j;
+		status = 0;
+		for (j = 0; j < i; j++)
+		{
+			waitpid(pidarr[j], &status, WNOHANG);
+		}
+
+		// Move nodes from dependencies to no_dependencies
+		int k;
+		while (top_graph_node_queue(DG->dependencies) != NULL)
+		{
+			k = 0;
+			while(top_graph_node_queue(DG->dependencies)->before[k] != NULL && top_graph_node_queue(DG->dependencies)->before[k]->pid != -1)
+				k++;
+			// If the loop terminated because it reached the end, add it to no_dependencies queue
+			if (top_graph_node_queue(DG->dependencies)->before[k] == NULL)
+			{
+				push_graph_node_queue(DG->no_dependencies, top_graph_node_queue(DG->dependencies));
+				pop_graph_node_queue(DG->dependencies);
+			}
+			else
+				break;
+		}
+
+	}
+	return status;
 }
 
 ////////////////////////////////////////////////////
@@ -299,6 +357,7 @@ push_graph_node_queue(graph_node_queue* gnq, graph_node* gn) {
         gnq->tail->next = newnode;
         gnq->tail = newnode;
     }
+    gnq->size++;
 }
 
 void
@@ -315,6 +374,7 @@ pop_graph_node_queue(graph_node_queue* gnq)
     // If you deleted the last one, make the tail NULL
     if (gnq->head == NULL)
         gnq->tail = NULL;
+    gnq->size--;
 }
 
 graph_node*
@@ -341,6 +401,7 @@ destroy_graph_node_queue(graph_node_queue* gnq)
             gnq->tail = NULL;
     }
     gnq->head = NULL;
+    gnq->size = 0;
     free(gnq);
 }
 
@@ -371,6 +432,8 @@ test_queue()
 
     push_graph_node_queue(q, gnn3);
     print_contents_of_queue(q);
+
+    printf("(3) size = %i \n", q->size);
     
     printf("POP/TOP TEST\n");
     graph_node* gnp;
@@ -385,6 +448,8 @@ test_queue()
 	printf("TOP\n");
     print_contents_of_graph_node(gnp);
 
+    printf("(2) size = %i \n", q->size);
+
     pop_graph_node_queue(q);
     print_contents_of_queue(q);
 	gnp = top_graph_node_queue(q);
@@ -396,6 +461,10 @@ test_queue()
 	gnp = top_graph_node_queue(q);
 	printf("TOP\n");
     print_contents_of_graph_node(gnp);
+
+    printf("(0) size = %i \n", q->size);
+    
+   	
 }
 
 void

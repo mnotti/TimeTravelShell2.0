@@ -108,7 +108,7 @@ typedef struct command_stream{
 
 struct graphNode
 {
-  struct command command_t;
+  struct command* command_t;
   struct graphNode** before;
   pid_t pid;
 };
@@ -121,6 +121,7 @@ struct queueNode {
 struct graphNodeQueue {
     struct queueNode* head;
     struct queueNode* tail;
+    int size;
 };
 
 struct dependencyGraph {

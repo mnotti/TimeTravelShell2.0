@@ -102,3 +102,4 @@ void destroyBst(bst_node* head);
 ///////////////////////////////////////////////////
 
 int createAndExecuteGraph(command_stream_t command_stream);
+int execute_graph(dependency_graph* DG);
