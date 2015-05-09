@@ -94,7 +94,8 @@ graph_node* searchBst(bst_node* head, char* word);	//returns 1 if found, 0 if no
 //TODO: should retrun the graph node which the found node points to (a node which the searcher is probably dependent upon)
 void destroyBst(bst_node* head);
 //must make sure the head node gets manually freed outside of destroy BST
-
+graph_node* searchSameList(bst_node* head, char* word, graph_node* graphNody);
+graph_node* searchOppositeList(bst_node* head, char* word);
 ///////////////////////////////////////////////////
 //
 //		EXECUTING AND CREATING GRAPH
@@ -102,4 +103,15 @@ void destroyBst(bst_node* head);
 ///////////////////////////////////////////////////
 
 int createAndExecuteGraph(command_stream_t command_stream);
+<<<<<<< Updated upstream
 int execute_graph(dependency_graph* DG);
+=======
+void processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node* headOfWriteTree, bst_node* headOfReadTree, dependency_graph* dependencyJones);
+
+
+
+
+
+
+
+>>>>>>> Stashed changes

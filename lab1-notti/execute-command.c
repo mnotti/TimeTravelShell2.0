@@ -17,6 +17,7 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
+int beforeCount = 0;
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -25,6 +26,105 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
+void
+processCommandAndUpdateGraph(command_t command, graph_node* graphyTemp, bst_node* headOfWriteTree, bst_node* headOfReadTree, dependency_graph* dependencyJones)
+{
+	
+	if(command->type == SIMPLE_COMMAND)
+	{
+		int i = 1;
+		while(command->u.word[i][0] != '\0')
+		{
+			if(command->u.word[i][0] != '-')
+			{
+				graph_node* temp2;
+				//search the read/write list for that word...adding if necessary 
+				if ((temp2 = searchOppositeList(headOfWriteTree, command->u.word[i])) && (graphyTemp != temp2))
+				{
+					graphyTemp->before[beforeCount] = temp2;
+					//add to queue
+					beforeCount++;
+				}
+				if ((temp2 = searchSameList(headOfReadTree, command->u.word[i], graphyTemp)))
+				{
+					graphyTemp->before[beforeCount] = temp2;
+					beforeCount++;
+				}
+			}
+			i++;
+		}
+		
+		graph_node* temp2;
+		if(command->input)
+		{
+			//search the trees for input 
+			if ((temp2 = searchOppositeList(headOfWriteTree, command->input)) && (graphyTemp != temp2))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}
+			if ((temp2 = searchSameList(headOfReadTree, command->input, graphyTemp)))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}			
+		}
+		if(command->output)
+		{
+			//search the trees for output 
+			if ((temp2 = searchOppositeList(headOfReadTree, command->output)) && (graphyTemp != temp2))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}
+			if ((temp2 = searchSameList(headOfWriteTree, command->output, graphyTemp)))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}				
+		}
+		return;
+	}
+	else if(command->type == SUBSHELL_COMMAND)
+	{
+		graph_node* temp2;
+		if(command->input)
+		{
+			//search the trees for input 
+			if ((temp2 = searchOppositeList(headOfWriteTree, command->input)) && (graphyTemp != temp2))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}
+			if ((temp2 = searchSameList(headOfReadTree, command->input, graphyTemp)))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}
+		}
+		if(command->output)
+		{
+			//search the trees for output 
+			if ((temp2 = searchOppositeList(headOfReadTree, command->output)) && (graphyTemp != temp2))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}
+			if ((temp2 = searchSameList(headOfWriteTree, command->output, graphyTemp)))
+			{
+				graphyTemp->before[beforeCount] = temp2;
+				beforeCount++;
+			}				
+		}
+		processCommandAndUpdateGraph(command->u.subshell_command, graphyTemp, headOfWriteTree, headOfReadTree, dependencyJones);
+
+	}
+	else
+	{
+		processCommandAndUpdateGraph(command->u.command[0], graphyTemp, headOfWriteTree, headOfReadTree, dependencyJones);
+		processCommandAndUpdateGraph(command->u.command[1], graphyTemp, headOfWriteTree, headOfReadTree, dependencyJones);
+	}
+}
 
 int 
 createAndExecuteGraph(command_stream_t command_stream)
@@ -55,7 +155,7 @@ createAndExecuteGraph(command_stream_t command_stream)
 		//INITIALIZE THE DEPENDENCY QUEUE AND THE NON-DEPENDENCY QUEUE
 
 	dependency_graph* dependencyJones = (dependency_graph*) malloc(sizeof(dependency_graph));
-	dependencyJones->no_dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
+	dependencyJones->dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
 	dependencyJones->no_dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
 
 
@@ -81,6 +181,24 @@ createAndExecuteGraph(command_stream_t command_stream)
 		//3a)
 		//MUST CREATE A NEW GRAPH NODE FOR EACH AND ADD THE GRAPH NODE TO EITHER THE DEPENDENCY OR 
 		//NON-DEPENDENCY QUEUE AFTER SEARCHING THRU BOTH THE READ AND THE WRITE LISTS FOR INPUTS AND OUTPUTS
+
+	command_t command;
+	while ((command = read_command_stream (command_stream)))
+    {
+    	
+    	graph_node* graphyTemp = (graph_node*)malloc(sizeof(graph_node));
+    	graphyTemp->command = command;
+    	graphyTemp->pid = -1;
+    	
+    	beforeCount = 0;	//keeps track of the length of the before array in each graph node
+    	processCommandAndUpdateGraph(command, graphyTemp, headOfWriteTree, headOfReadTree, dependencyJones);
+    	graphyTemp->before[beforeCount] = NULL;
+
+    	if(beforeCount)
+    		push_graph_node_queue(dependencyJones->dependencies, graphyTemp);
+    	else
+    		push_graph_node_queue(dependencyJones->no_dependencies, graphyTemp);
+    }
 
 	//4)
 	//EXECUTE THE QUEUES
@@ -164,6 +282,123 @@ execute_graph(dependency_graph* DG)
 	headOfTree->right = NULL;
 	headOfTree->word = NULL;
 	*/
+
+graph_node*
+searchSameList(bst_node* head, char* word, graph_node* graphNody)
+{
+	if(head->word == NULL)
+	{
+
+		head->graphNody = graphNody;
+		head->word = word;
+		return NULL;
+
+	}
+	else
+	{
+		bst_node* it = head;
+		while (it != NULL)
+		{
+			int cmpVal = strcmp(word, it->word);
+			if (cmpVal < 0)
+			{	
+				//word < it->word
+				if(it->left != NULL)
+					it = it->left;
+				else
+				{
+					bst_node* newBstNode = (bst_node*) malloc(sizeof(bst_node));
+					newBstNode->left = NULL;
+					newBstNode->right = NULL;
+					newBstNode->graphNody = graphNody;
+					newBstNode->word = word;
+
+					it->left = newBstNode;
+					return NULL;
+				}
+			}
+			else if(cmpVal > 0)
+			{
+				//str1 > it->word
+				if(it->right != NULL)
+					it = it->right;
+				else
+				{
+					bst_node* newBstNode = (bst_node*) malloc(sizeof(bst_node));
+					newBstNode->left = NULL;
+					newBstNode->right = NULL;
+					newBstNode->graphNody = graphNody;
+					newBstNode->word = word;
+
+					it->right = newBstNode;
+					return NULL;					
+				}
+			}
+			else
+			{
+				//str1 == it->word
+				if(graphNody != it->graphNody)
+				{
+					graph_node* tempGraphyNody = it->graphNody;
+					it->graphNody = graphNody;
+					return tempGraphyNody;
+				}
+				else 
+					return NULL;
+			}
+		}
+	
+	}
+
+	return NULL;
+}
+
+graph_node*
+searchOppositeList(bst_node* head, char* word)
+{
+	if(head->word == NULL)
+	{
+		return NULL;
+	}
+	else
+	{
+		bst_node* it = head;
+		while (it != NULL)
+		{
+			int cmpVal = strcmp(word, it->word);
+			if (cmpVal < 0)
+			{	
+				//word < it->word
+				if(it->left != NULL)
+					it = it->left;
+				else
+				{
+					//not found
+					return NULL;
+				}
+			}
+			else if(cmpVal > 0)
+			{
+				//str1 > it->word
+				if(it->right != NULL)
+					it = it->right;
+				else
+				{
+					//not found
+					return NULL;					
+				}
+			}
+			else
+			{
+				//str1 == it->word
+				printf("Found word\n");
+				return it->graphNody;
+			}
+		}
+	
+	}
+	return NULL;
+}
 
 void
 destroyBst(bst_node* head)
