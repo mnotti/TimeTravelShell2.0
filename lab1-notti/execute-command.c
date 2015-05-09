@@ -202,11 +202,7 @@ createAndExecuteGraph(command_stream_t command_stream)
 
 	//4)
 	//EXECUTE THE QUEUES
-
-
-
-
-
+	execute_graph(dependencyJones);
 
 	//then 
 	return final_status;
