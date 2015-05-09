@@ -16,6 +16,83 @@
 /* FIXME: You may need to add #include directives, macro definitions,
    static function definitions, etc.  */
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+//
+//		1C IMPLEMENTATION (PROCESSING COMMAND TREES AND FINDING DEPENDENCIES)
+//
+////////////////////////////////////////////////////////////////////////////////
+
+
+int 
+createAndExecuteGraph(command_stream_t command_stream)
+{
+	int final_status;
+	final_status = 0;
+	if(command_stream)
+	{
+
+	}
+	//PSEUDO
+/*
+	struct graphNodeQueue {
+    	struct queueNode* head;
+    	struct queueNode* tail;
+	};
+
+	struct dependencyGraph {
+  		struct graphNodeQueue* no_dependencies;
+  		struct graphNodeQueue* dependencies;
+};
+*/
+
+	//1)
+	//INITIALIZE THE DEPENDENCY GRAPH
+	
+		//1a)
+		//INITIALIZE THE DEPENDENCY QUEUE AND THE NON-DEPENDENCY QUEUE
+
+	dependency_graph* dependencyJones = (dependency_graph*) malloc(sizeof(dependency_graph));
+	dependencyJones->no_dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
+	dependencyJones->no_dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
+
+
+	//2)
+	//create and read list and a write list by initializing the first nodes with
+	//no values
+	bstNode* headOfReadTree = (bstNode*) malloc(sizeof(bstNode));
+	
+	headOfReadTree->left = NULL;
+	headOfReadTree->right = NULL;
+	headOfReadTree->word = NULL;
+
+	bstNode* headOfWriteTree = (bstNode*) malloc(sizeof(bstNode));
+	
+	headOfWriteTree->left = NULL;
+	headOfWriteTree->right = NULL;
+	headOfWriteTree->word = NULL;
+
+	//3)
+	//IMPLEMENT THE PROCESS COMMAND RECURSIVE FUNCTION GIVEN BY TUAN FOR EACH OF THE COMMAND TREES IN 
+	//COMMAND STREAM
+
+		//3a)
+		//MUST CREATE A NEW GRAPH NODE FOR EACH AND ADD THE GRAPH NODE TO EITHER THE DEPENDENCY OR 
+		//NON-DEPENDENCY QUEUE AFTER SEARCHING THRU BOTH THE READ AND THE WRITE LISTS FOR INPUTS AND OUTPUTS
+
+	//4)
+	//EXECUTE THE QUEUES
+
+
+
+
+
+
+	//then 
+	return final_status;
+}
+
 ////////////////////////////////////////////////////
 //
 //		BST IMPLEMENTATION
@@ -367,53 +444,7 @@ void print_contents_of_graph_node(graph_node* gn)
 	printf("Address: %p \t pid: %i \n", gn, (int)gn->pid);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//
-//		1C IMPLEMENTATION (PROCESSING COMMAND TREES AND FINDING DEPENDENCIES)
-//
-////////////////////////////////////////////////////////////////////////////////
 
-
-int 
-createAndExecuteGraph(command_stream_t command_stream)
-{
-	int final_status;
-	final_status = 0;
-	if(command_stream)
-	{
-
-	}
-	//PSEUDO
-
-	//1)
-	//INITIALIZE THE DEPENDENCY GRAPH 
-	
-		//1a)
-		//INITIALIZE THE DEPENDENCY QUEUE AND THE NON-DEPENDENCY QUEUE
-
-	//2)
-	//create and read list and a write list by initializing the first nodes with
-	//no values
-
-	//3)
-	//IMPLEMENT THE PROCESS COMMAND RECURSIVE FUNCTION GIVEN BY TUAN FOR EACH OF THE COMMAND TREES IN 
-	//COMMAND STREAM
-
-		//3a)
-		//MUST CREATE A NEW GRAPH NODE FOR EACH AND ADD THE GRAPH NODE TO EITHER THE DEPENDENCY OR 
-		//NON-DEPENDENCY QUEUE AFTER SEARCHING THRU BOTH THE READ AND THE WRITE LISTS FOR INPUTS AND OUTPUTS
-
-	//4)
-	//EXECUTE THE QUEUES
-
-
-
-
-
-
-	//then 
-	return final_status;
-}
 
 
 ///////////////////////////////////////

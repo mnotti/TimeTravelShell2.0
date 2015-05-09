@@ -1211,14 +1211,12 @@ make_command_stream (int (*get_next_byte) (void *),
   }
   printf("\n");*/
 
-  //  ERROR TESTING FOR TOKENIZING WORDS TODO:uncomment?
   size_t token_array_size;
   token_t *t = tokenize(inputString, bufflen, &token_array_size);
 
 	size_t token_ptr_array_size;
 	token_t **token_ptr_array = get_token_arr(t, token_array_size, &token_ptr_array_size);
 	if (token_ptr_array_size || token_ptr_array) {} // TODO: Fix
-	//printf("Hello \n");
 	//printf("%i \n", (int)token_ptr_array_size);
 	//test_token_ptr_arr(token_ptr_array, token_ptr_array_size);
 
