@@ -117,6 +117,7 @@ struct graphNode
 struct queueNode {
     struct graphNode* gn;
     struct queueNode* next;
+    int run;  //MM
 };
 
 struct graphNodeQueue {

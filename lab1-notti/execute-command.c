@@ -266,7 +266,7 @@ int
 execute_graph(dependency_graph* DG)
 {
 	int status = 0;
-	size_t to_malloc = DG->no_dependencies->size * DG->dependencies->size;
+	size_t to_malloc = DG->no_dependencies->size + DG->dependencies->size + 4;
 	pid_t *pidarr = checked_malloc(sizeof(pid_t) * to_malloc);
 	//int *statusarr = checked_malloc(sizeof(int) * to_malloc);
 	while (DG->dependencies->size != 0)
@@ -276,12 +276,17 @@ execute_graph(dependency_graph* DG)
 		int sze = DG->no_dependencies->size;
 		for (i = 0; i < sze; i++)
 		{
+			graph_node* graphyMcGrapherson = top_graph_node_queue(DG->no_dependencies); //ADDED BY MARKY MARK
 			command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
 			pop_graph_node_queue(DG->no_dependencies);
 			pidarr[i] = fork();
+			graphyMcGrapherson->pid = pidarr[i];
+
 			if (pidarr[i] == 0)
 			{
 				execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
+				//graphyMcGrapherson->pid = 10;
+
 				exit(tmp->status);	// TODO: Change exit status?
 			}
 			else if (pidarr[i] < 0)
@@ -318,18 +323,43 @@ execute_graph(dependency_graph* DG)
 		}
 
 	}
+		/*int k;
+		queue_node* tmpQueueyNode = DG->dependencies->head;
+		while (tmpQueueyNode != NULL)
+		{
+				k = 0;
+				if(tmpQueueyNode!= 1)
+				{
+					while(tmpQueueyNode->before[k] != NULL && tmpQueueyNode->before[k]->pid != -1)
+					k++;
+					// If the loop terminated because it reached the end, add it to no_dependencies queue
+					if (tmpQueueyNode->before[k] == NULL)
+					{
+						push_graph_node_queue(DG->no_dependencies, tmpQueueyNode);
+						tmpQueueyNode->run = 1;
+					}
+					else
+						break;
+				}
+				tmpQueueyNode = tmpQueueyNode->next;
+		}*/
 
 
 	int i;
 	int sze = DG->no_dependencies->size;
 	for (i = 0; i < sze; i++)
 	{
+		graph_node* graphyMcGrapherson = top_graph_node_queue(DG->no_dependencies); //ADDED BY MARKY MARK
 		command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
 		pop_graph_node_queue(DG->no_dependencies);
+		graphyMcGrapherson->pid = pidarr[i];
+
+	 	
 		pidarr[i] = fork();
 		if (pidarr[i] == 0)
 		{
 			execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
+
 			exit(tmp->status);	// TODO: Change exit status?
 		}
 		else if (pidarr[i] < 0)
@@ -340,6 +370,7 @@ execute_graph(dependency_graph* DG)
 	}
 
 	// Wait for the processes to finish
+
 	int j;
 	status = 0;
 	for (j = 0; j < i; j++)
@@ -347,7 +378,6 @@ execute_graph(dependency_graph* DG)
 		while(!waitpid(pidarr[j], &status, WNOHANG))
 			continue;
 	}
-
 	return status;
 }
 
@@ -605,53 +635,6 @@ searchBst(bst_node* head, char* word)
 	}
 	return NULL;
 }
-/*
-int 
-searchBst(bst_node* head, char* word)
-{
-	if(head->word == NULL)
-	{
-		return 0;
-	}
-	else
-	{
-		bst_node* it = head;
-		while (it != NULL)
-		{
-			int cmpVal = strcmp(word, it->word);
-			if (cmpVal < 0)
-			{	
-				//word < it->word
-				if(it->left != NULL)
-					it = it->left;
-				else
-				{
-					//not found
-					return 0;
-				}
-			}
-			else if(cmpVal > 0)
-			{
-				//str1 > it->word
-				if(it->right != NULL)
-					it = it->right;
-				else
-				{
-					//not found
-					return 0;					
-				}
-			}
-			else
-			{
-				//str1 == it->word
-				printf("Found word\n");
-					return 1;
-			}
-		}
-	
-	}
-}
-*/
 
 
 ////////////////////////////////////////////////////
@@ -680,14 +663,13 @@ push_graph_node_queue(graph_node_queue* gnq, graph_node* gn) {
 void
 pop_graph_node_queue(graph_node_queue* gnq)
 {
-    // Can't pop an empy queue
+    // Can't pop an empty queue
     if (gnq->head == NULL)
         return;
     
-    queue_node* tmp = gnq->head;
+    
     gnq->head = gnq->head->next;
-    free(tmp->gn);
-    free(tmp);
+
     // If you deleted the last one, make the tail NULL
     if (gnq->head == NULL)
         gnq->tail = NULL;
