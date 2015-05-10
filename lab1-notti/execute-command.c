@@ -273,20 +273,21 @@ execute_graph(dependency_graph* DG)
 	{
 		// Spawn processes for the runnable (in no_dependencies)
 		int i;
-		for (i = 0; i < DG->no_dependencies->size; i++)
+		int sze = DG->no_dependencies->size;
+		for (i = 0; i < sze; i++)
 		{
+			command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
+			pop_graph_node_queue(DG->no_dependencies);
 			pidarr[i] = fork();
 			if (pidarr[i] == 0)
 			{
-				command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
-				pop_graph_node_queue(DG->no_dependencies);
 				execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
-				exit(0);	// TODO: Change exit status?
+				exit(tmp->status);	// TODO: Change exit status?
 			}
 			else if (pidarr[i] < 0)
 			{
 				fprintf(stderr, "ERROR FORKING\n");				// TODO: Change error?
-        		exit(1);
+	    		exit(1);
 			}
 		}
 
@@ -295,7 +296,8 @@ execute_graph(dependency_graph* DG)
 		status = 0;
 		for (j = 0; j < i; j++)
 		{
-			waitpid(pidarr[j], &status, WNOHANG);
+			while(!waitpid(pidarr[j], &status, WNOHANG))
+				continue;
 		}
 
 		// Move nodes from dependencies to no_dependencies
@@ -319,15 +321,16 @@ execute_graph(dependency_graph* DG)
 
 
 	int i;
-	for (i = 0; i < DG->no_dependencies->size; i++)
+	int sze = DG->no_dependencies->size;
+	for (i = 0; i < sze; i++)
 	{
+		command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
+		pop_graph_node_queue(DG->no_dependencies);
 		pidarr[i] = fork();
 		if (pidarr[i] == 0)
 		{
-			command_t tmp = top_graph_node_queue(DG->no_dependencies)->command;
-			pop_graph_node_queue(DG->no_dependencies);
 			execute_command(tmp, 1); // TODO: Make it so execute_command has one parameter
-			exit(0);	// TODO: Change exit status?
+			exit(tmp->status);	// TODO: Change exit status?
 		}
 		else if (pidarr[i] < 0)
 		{
@@ -341,9 +344,10 @@ execute_graph(dependency_graph* DG)
 	status = 0;
 	for (j = 0; j < i; j++)
 	{
-		waitpid(pidarr[j], &status, WNOHANG);
+		while(!waitpid(pidarr[j], &status, WNOHANG))
+			continue;
 	}
-		
+
 	return status;
 }
 
