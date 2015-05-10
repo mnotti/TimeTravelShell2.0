@@ -207,8 +207,16 @@ createAndExecuteGraph(command_stream_t command_stream)
 		//INITIALIZE THE DEPENDENCY QUEUE AND THE NON-DEPENDENCY QUEUE
 
 	dependency_graph* dependencyJones = (dependency_graph*) malloc(sizeof(dependency_graph));
+
 	dependencyJones->dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
+	dependencyJones->dependencies->size = 0;
+	dependencyJones->dependencies->head = NULL;
+	dependencyJones->dependencies->tail = NULL;
+
 	dependencyJones->no_dependencies = (graph_node_queue*) malloc(sizeof(graph_node_queue));
+	dependencyJones->no_dependencies->size = 0;
+	dependencyJones->no_dependencies->head = NULL;
+	dependencyJones->no_dependencies->tail = NULL;
 
 
 	//2)
@@ -503,7 +511,7 @@ searchOppositeList(bst_node* head, char* word)
 			else
 			{
 				//str1 == it->word
-				printf("Found word\n");
+				//printf("Found word\n");
 				return it->graphNody;
 			}
 		}
@@ -581,7 +589,7 @@ addNewBstNode(bst_node* head, char* word, graph_node* graphNody)
 			else
 			{
 				//str1 == it->word
-				printf("WARNING: Found the same word(shouldn't be adding a newNode if word is already in the BST\n");
+				//printf("WARNING: Found the same word(shouldn't be adding a newNode if word is already in the BST\n");
 					return;
 			}
 		}
@@ -627,7 +635,7 @@ searchBst(bst_node* head, char* word)
 			else
 			{
 				//str1 == it->word
-				printf("Found word\n");
+				//printf("Found word\n");
 					return it->graphNody;
 			}
 		}
@@ -1029,7 +1037,7 @@ execute_command (command_t c, bool time_travel)
    			handle_subshell_command(c, time_travel);
    			break;
    		default:
-   			printf("Error!! An unidentified command has been passed into execute switch statement!\n");
+   			//printf("Error!! An unidentified command has been passed into execute switch statement!\n");
    			break;
   
 	}
