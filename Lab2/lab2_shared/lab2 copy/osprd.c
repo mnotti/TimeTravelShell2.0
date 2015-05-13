@@ -52,6 +52,11 @@ typedef struct exited_node{
 	unsigned ticket_no;
 }exited_node;
 
+typedef struct pid_tracker{
+	struct pid_tracker* next;
+	int pid;
+}
+
 /* The internal representation of our device. */
 typedef struct osprd_info {
 	uint8_t *data;                  // The data array. Its size is
