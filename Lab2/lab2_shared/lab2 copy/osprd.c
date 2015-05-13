@@ -98,21 +98,29 @@ void find_next_ticket(osprd_info_t* d)
 	//Finding Next ticket//
 	///////////////////////
 
-	d->ticket_head++;
+	//d->ticket_head++;
 						
 	//check if next ticket has been killed
-	exited_node* it_temp;
+	exited_node* it_temp = NULL;
+	exited_node* it_temp2 = NULL;
 	for(;;)	//loop until you reach the end of exited node list
 	{
 		it_temp = d->exited_head;
+
 		while(it_temp != NULL)
 		{
 			if (it_temp->ticket_no == d->ticket_head)	//current ticket holder is on the exit list
 			{
-				eprintk("tick no %i skipped\n", d->ticket_head);
 				d->ticket_head++;
+				if (it_temp2)
+					it_temp2->next = it_temp->next;
+				else
+					d->exited_head = it_temp->next;
+				kfree(it_temp);
+
 				break;
 			}
+			it_temp2 = it_temp;
 			it_temp	= it_temp->next;
 		}
 		if(it_temp == NULL)		//has reached the end of the list
@@ -298,7 +306,6 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 		//assign a ticket to current process and increment ticket tracker
 		unsigned tickety_current = d->ticket_tail;
-		eprintk("tick no %i assigned to process %i\n", tickety_current, current->pid);
 		d->ticket_tail++;
 
 		spin_unlock(&d->mutex);
@@ -317,26 +324,21 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		{
 			//TODO: add the current ticket to the exited ticket list
 					//return -ERESTARTSYS
-			eprintk("process %i  with ticket %i should be getting added to the killed list\n", current->pid, tickety_current);
 			spin_lock(&d->mutex);
 
 			exited_node* temp_node = kmalloc(sizeof(exited_node), GFP_ATOMIC);
 			temp_node->ticket_no = tickety_current;
-			eprintk("Allocated new node with ticket no %i\n", tickety_current);
 
 			temp_node->next = d->exited_head;
 			d->exited_head = temp_node;
-			eprintk("New head has ticket no %i\n", d->exited_head->ticket_no);
 
-
+			find_next_ticket(d);
 			spin_unlock(&d->mutex);
 
 			wake_up_all(&d->blockq);
 			return -ERESTARTSYS;
 
 		}
-		eprintk("process %i with tix no %i should be getting run\n", current->pid, tickety_current);
-
 
 		//handle sys signals...kill tickets if signals TODO
 		
@@ -353,6 +355,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		{
 			d->n_read_locks++;
 		}
+
+		d->ticket_head++;
 		find_next_ticket(d);
 
 		spin_unlock(&d->mutex);
@@ -378,9 +382,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
         
 		spin_lock(&d->mutex);
 
-		
 		unsigned tickety_current = d->ticket_tail;
-		eprintk("tick no %i assigned to process %i\n", tickety_current, current->pid);
 
 		d->ticket_tail++;
 
@@ -394,6 +396,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 				filp->f_flags |= F_OSPRD_LOCKED;
 				d->n_write_locks++;
+
+				d->ticket_head++;
 				find_next_ticket(d);
 
 				spin_unlock(&d->mutex);
@@ -404,6 +408,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 			else
 			{
 				spin_lock(&d->mutex);
+
+				d->ticket_head++;
 				find_next_ticket(d);
 				spin_unlock(&d->mutex);
 
@@ -420,6 +426,8 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 				filp->f_flags |= F_OSPRD_LOCKED;
 				d->n_read_locks++;
+
+				d->ticket_head++;
 				find_next_ticket(d);
 
 				spin_unlock(&d->mutex);
@@ -431,7 +439,9 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 			{
 				spin_lock(&d->mutex);
 
+				d->ticket_head++;
 				find_next_ticket(d);
+
 				wake_up_all(&d->blockq);
 			
 				spin_unlock(&d->mutex);
