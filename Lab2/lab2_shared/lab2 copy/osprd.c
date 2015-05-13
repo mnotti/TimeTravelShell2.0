@@ -43,7 +43,7 @@ MODULE_AUTHOR("Markus Notti and Kyle Baker");
  * as an argument to insmod: "insmod osprd.ko nsectors=4096" */
 static int nsectors = 32;
 module_param(nsectors, int, 0);
-
+int osprd_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
 
 /* The internal representation of our device. */
 typedef struct osprd_info {
@@ -129,7 +129,7 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
     if (req->sector > nsectors || req->sector < 0)
     {
         eprintk("Invalid sector number\n");
-        end_request(0, req)
+        end_request(0, req);
     }
 
     int data_size = req->current_nr_sectors * SECTOR_SIZE;
@@ -262,11 +262,11 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 		if(filp_writable)
 		{
-			waity_return_val = wait_event_interuptible(d->blockq, tickety_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0);
+			waity_return_val = wait_event_interruptible(d->blockq, tickety_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0);
 		}
 		else
 		{
-			waity_return_val = wait_event_interuptible(d->blockq, tickety_current == d->ticket_head && d->n_write_locks== 0);
+			waity_return_val = wait_event_interruptible(d->blockq, tickety_current == d->ticket_head && d->n_write_locks== 0);
 		}
 
 
@@ -275,7 +275,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 		spin_lock(&d->mutex);
 
-		filp->f_flags |= F_OSPRD_LOCKED
+        filp->f_flags |= F_OSPRD_LOCKED;
 
 		if (filp_writable)
 		{
@@ -323,15 +323,15 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
             osp_spin_lock(&d->mutex);
             
             if (filp_writable)
-                n_write_locks--;
+                d->n_write_locks--;
             else
-                n_read_locks--;
+                d->n_read_locks--;
             
             filp->f_flags ^= F_OSPRD_LOCKED;
             osp_spin_unlock(&d->mutex);
             wake_up_all(&d->blockq);
             
-            r = 0
+            r = 0;
         }
         else
             r = -EINVAL;
