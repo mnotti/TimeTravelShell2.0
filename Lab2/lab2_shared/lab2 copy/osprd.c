@@ -307,10 +307,11 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// Otherwise, if we can grant the lock request, return 0.
 
 		// Your code here (instead of the next two lines).
+        
 		spin_lock(&d->mutex);
 
 		unsigned ticky_current = d->ticket_tail;
-		ticky_current++;
+		d->ticket_tail++;
 
 		spin_unlock(&d->mutex);
 
@@ -357,7 +358,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 				return -EBUSY;
 			}
-		}
+        }
 
 	} else if (cmd == OSPRDIOCRELEASE) {
 
