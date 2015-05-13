@@ -44,6 +44,11 @@ MODULE_AUTHOR("Markus Notti and Kyle Baker");
 static int nsectors = 32;
 module_param(nsectors, int, 0);
 
+typedef struct exited_node{
+	struct exited_node* next;
+	unsigned ticket_no;
+}exited_node;
+
 
 /* The internal representation of our device. */
 typedef struct osprd_info {
@@ -74,6 +79,7 @@ typedef struct osprd_info {
 
 	unsigned n_read_locks;			//ADDED
 	unsigned n_write_locks;			//ADDED
+	exited_node* exited_head;		//ADDED
 } osprd_info_t;
 
 #define NOSPRD 4
@@ -242,9 +248,22 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		{
 			waity_return_val = wait_event_interruptible(d->blockq, ticky_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0);
 		}
-		else
+		else if
 		{
 			waity_return_val = wait_event_interruptible(d->blockq, ticky_current == d->ticket_head && d->n_write_locks== 0);
+		}
+		if(waity_return_val == -ERESTARTSYS)
+		{
+			//TODO: add the current ticket to the exited ticket list
+					//return -ERESTARTSYS
+			spin_lock(&d->mutex);
+
+			exited_node* temp_node = kmalloc(sizeof(exited_node), GFP_ATOMIC);
+			temp_node->ticket_no = 
+
+			temp_node->next = d->exited_head;
+			d->exited_head = temp_node->next;
+
 		}
 
 
@@ -364,6 +383,10 @@ static void osprd_setup(osprd_info_t *d)
 	osp_spin_lock_init(&d->mutex);
 	d->ticket_head = d->ticket_tail = 0;
 	/* Add code here if you add fields to osprd_info_t. */
+
+	d->n_read_locks = 0;
+	d->n_write_locks = 0;
+	d->exited_head = NULL;
 }
 
 

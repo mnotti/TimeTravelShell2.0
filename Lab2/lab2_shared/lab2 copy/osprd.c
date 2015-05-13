@@ -43,7 +43,14 @@ MODULE_AUTHOR("Markus Notti and Kyle Baker");
  * as an argument to insmod: "insmod osprd.ko nsectors=4096" */
 static int nsectors = 32;
 module_param(nsectors, int, 0);
+
 int osprd_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
+
+
+typedef struct exited_node{
+	struct exited_node* next;
+	unsigned ticket_no;
+}exited_node;
 
 /* The internal representation of our device. */
 typedef struct osprd_info {
@@ -74,6 +81,8 @@ typedef struct osprd_info {
 
 	unsigned n_read_locks;			//ADDED
 	unsigned n_write_locks;			//ADDED
+	exited_node* exited_head;		//ADDED
+
 } osprd_info_t;
 
 #define NOSPRD 4
@@ -81,6 +90,38 @@ static osprd_info_t osprds[NOSPRD];
 
 
 // Declare useful helper functions
+
+void find_next_ticket(osprd_info_t* d);
+void find_next_ticket(osprd_info_t* d)
+{
+	///////////////////////
+	//Finding Next ticket//
+	///////////////////////
+
+	d->ticket_head++;
+						
+	//check if next ticket has been killed
+	exited_node* it_temp;
+	for(;;)	//loop until you reach the end of exited node list
+	{
+		it_temp = d->exited_head;
+		while(it_temp != NULL)
+		{
+			if (it_temp->ticket_no == d->ticket_head)	//current ticket holder is on the exit list
+			{
+				eprintk("tick no %i skipped\n", d->ticket_head);
+				d->ticket_head++;
+				break;
+			}
+			it_temp	= it_temp->next;
+		}
+		if(it_temp == NULL)		//has reached the end of the list
+		break;
+	}
+	///////////////////////////////
+	//Next ticket should be found//
+	///////////////////////////////
+}
 
 /*
  * file2osprd(filp)
@@ -101,6 +142,9 @@ static void for_each_open_file(struct task_struct *task,
 			       void (*callback)(struct file *filp,
 						osprd_info_t *user_data),
 			       osprd_info_t *user_data);
+
+
+
 
 
 /*
@@ -254,6 +298,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 		//assign a ticket to current process and increment ticket tracker
 		unsigned tickety_current = d->ticket_tail;
+		eprintk("tick no %i assigned to process %i\n", tickety_current, current->pid);
 		d->ticket_tail++;
 
 		spin_unlock(&d->mutex);
@@ -268,6 +313,29 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		{
 			waity_return_val = wait_event_interruptible(d->blockq, tickety_current == d->ticket_head && d->n_write_locks== 0);
 		}
+		if(waity_return_val == -ERESTARTSYS)
+		{
+			//TODO: add the current ticket to the exited ticket list
+					//return -ERESTARTSYS
+			eprintk("process %i  with ticket %i should be getting added to the killed list\n", current->pid, tickety_current);
+			spin_lock(&d->mutex);
+
+			exited_node* temp_node = kmalloc(sizeof(exited_node), GFP_ATOMIC);
+			temp_node->ticket_no = tickety_current;
+			eprintk("Allocated new node with ticket no %i\n", tickety_current);
+
+			temp_node->next = d->exited_head;
+			d->exited_head = temp_node;
+			eprintk("New head has ticket no %i\n", d->exited_head->ticket_no);
+
+
+			spin_unlock(&d->mutex);
+
+			wake_up_all(&d->blockq);
+			return -ERESTARTSYS;
+
+		}
+		eprintk("process %i with tix no %i should be getting run\n", current->pid, tickety_current);
 
 
 		//handle sys signals...kill tickets if signals TODO
@@ -285,7 +353,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		{
 			d->n_read_locks++;
 		}
-		d->ticket_head++;
+		find_next_ticket(d);
 
 		spin_unlock(&d->mutex);
 
@@ -309,40 +377,50 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// Your code here (instead of the next two lines).
 		spin_lock(&d->mutex);
 
-		unsigned ticky_current = d->ticket_tail;
-		ticky_current++;
+		unsigned tickety_current = d->ticket_tail;
+		eprintk("tick no %i assigned to process %i\n", tickety_current, current->pid);
+		d->ticket_tail++;
 
 		spin_unlock(&d->mutex);
 
 		if(filp_writable)
 		{
-			if(ticky_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0)
+			if(tickety_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0)
 			{
+				spin_lock(&d->mutex);
+
 				filp->f_flags |= F_OSPRD_LOCKED;
 				d->n_write_locks++;
-				d->ticket_head++;
+				find_next_ticket(d);
+
+				spin_unlock(&d->mutex);
+
 				wake_up_all(&d->blockq);
 				return 0;
 			}
 			else
 			{
 				spin_lock(&d->mutex);
-
-				d->ticket_head++;
-				wake_up_all(&d->blockq);
-			
+				find_next_ticket(d);
 				spin_unlock(&d->mutex);
 
+				wake_up_all(&d->blockq);
 				return -EBUSY;
 			}
 		}
 		else
 		{
-			if(ticky_current == d->ticket_head && d->n_write_locks == 0)
+			if(tickety_current == d->ticket_head && d->n_write_locks == 0)
 			{
+
+				spin_lock(&d->mutex);
+
 				filp->f_flags |= F_OSPRD_LOCKED;
 				d->n_read_locks++;
-				d->ticket_head++;
+				find_next_ticket(d);
+
+				spin_unlock(&d->mutex);
+				
 				wake_up_all(&d->blockq);
 				return 0;
 			}
@@ -350,7 +428,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 			{
 				spin_lock(&d->mutex);
 
-				d->ticket_head++;
+				find_next_ticket(d);
 				wake_up_all(&d->blockq);
 			
 				spin_unlock(&d->mutex);
@@ -402,6 +480,9 @@ static void osprd_setup(osprd_info_t *d)
 	osp_spin_lock_init(&d->mutex);
 	d->ticket_head = d->ticket_tail = 0;
 	/* Add code here if you add fields to osprd_info_t. */
+	d->n_read_locks = 0;
+	d->n_write_locks = 0;
+	d->exited_head = NULL;
 }
 
 
