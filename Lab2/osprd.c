@@ -43,7 +43,7 @@ MODULE_AUTHOR("Markus Notti and Kyle Baker");
  * as an argument to insmod: "insmod osprd.ko nsectors=4096" */
 static int nsectors = 32;
 module_param(nsectors, int, 0);
-int osprd_ioctl(struct inode *inode, struct file *filp, unsigned int cmd, unsigned long arg);
+
 
 /* The internal representation of our device. */
 typedef struct osprd_info {
@@ -125,25 +125,8 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
 
 
 	// Your code here.
-    
-    if (req->sector > nsectors || req->sector < 0)
-    {
-        eprintk("Invalid sector number\n");
-        end_request(0, req);
-    }
+	eprintk("Should process request...\n");
 
-    int data_size = req->current_nr_sectors * SECTOR_SIZE;
-    int offset = req->sector * SECTOR_SIZE;
-    
-    if (rq_data_dir(req) == WRITE)
-        memcpy(d->data + offset, req->buffer, data_size);
-    else if (rq_data_dir(req) == READ)
-        memcpy(req->buffer, d->data + offset, data_size);
-    else
-    {
-        eprintk("Invalid read/write type\n");
-        end_request(req, 0);
-    }
 	end_request(req, 1);
 }
 
@@ -173,11 +156,6 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
 		// as appropriate.
 
 		// Your code here.
-        
-        if(filp->f_flags & F_OSPRD_LOCKED)
-        {
-            osprd_ioctl(inode, filp, OSPRDIOCRELEASE, 0);
-        }
 
 		// This line avoids compiler warnings; you may remove it.
 		(void) filp_writable, (void) d;
@@ -253,7 +231,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		spin_lock(&d->mutex);
 
 		//assign a ticket to current process and increment ticket tracker
-		unsigned tickety_current = d->ticket_tail;
+		unsigned ticky_current = d->ticket_tail;
 		d->ticket_tail++;
 
 		spin_unlock(&d->mutex);
@@ -262,11 +240,11 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 		if(filp_writable)
 		{
-			waity_return_val = wait_event_interruptible(d->blockq, tickety_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0);
+			waity_return_val = wait_event_interruptible(d->blockq, ticky_current == d->ticket_head && d->n_read_locks == 0 && d->n_write_locks == 0);
 		}
 		else
 		{
-			waity_return_val = wait_event_interruptible(d->blockq, tickety_current == d->ticket_head && d->n_write_locks== 0);
+			waity_return_val = wait_event_interruptible(d->blockq, ticky_current == d->ticket_head && d->n_write_locks== 0);
 		}
 
 
@@ -275,7 +253,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 
 		spin_lock(&d->mutex);
 
-        filp->f_flags |= F_OSPRD_LOCKED;
+		filp->f_flags |= F_OSPRD_LOCKED;
 
 		if (filp_writable)
 		{
@@ -369,23 +347,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// you need, and return 0.
 
 		// Your code here (instead of the next line).
-        if (filp->f_flags & F_OSPRD_LOCKED)
-        {
-            osp_spin_lock(&d->mutex);
-            
-            if (filp_writable)
-                d->n_write_locks--;
-            else
-                d->n_read_locks--;
-            
-            filp->f_flags ^= F_OSPRD_LOCKED;
-            osp_spin_unlock(&d->mutex);
-            wake_up_all(&d->blockq);
-            
-            r = 0;
-        }
-        else
-            r = -EINVAL;
+		r = -ENOTTY;
 
 	} else
 		r = -ENOTTY; /* unknown command */
