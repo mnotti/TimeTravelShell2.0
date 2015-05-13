@@ -125,8 +125,25 @@ static void osprd_process_request(osprd_info_t *d, struct request *req)
 
 
 	// Your code here.
-	eprintk("Should process request...\n");
+    
+    if (req->sector > nsectors || req->sector < 0)
+    {
+        eprintk("Invalid sector number\n");
+        end_request(0, req)
+    }
 
+    int data_size = req->current_nr_sectors * SECTOR_SIZE;
+    int offset = req->sector * SECTOR_SIZE;
+    
+    if (rq_data_dir(req) == WRITE)
+        memcpy(d->data + offset, req->buffer, data_size);
+    else if (rq_data_dir(req) == READ)
+        memcpy(req->buffer, d->data + offset, data_size);
+    else
+    {
+        eprintk("Invalid read/write type\n");
+        end_request(req, 0);
+    }
 	end_request(req, 1);
 }
 
@@ -156,6 +173,11 @@ static int osprd_close_last(struct inode *inode, struct file *filp)
 		// as appropriate.
 
 		// Your code here.
+        
+        if(filp->f_flags & F_OSPRD_LOCKED)
+        {
+            osprd_ioctl(inode, filp, OSPRDIOCRELEASE, 0);
+        }
 
 		// This line avoids compiler warnings; you may remove it.
 		(void) filp_writable, (void) d;
@@ -296,7 +318,23 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 		// you need, and return 0.
 
 		// Your code here (instead of the next line).
-		r = -ENOTTY;
+        if (filp->f_flags & F_OSPRD_LOCKED)
+        {
+            osp_spin_lock(&d->mutex);
+            
+            if (filp_writable)
+                n_write_locks--;
+            else
+                n_read_locks--;
+            
+            filp->f_flags ^= F_OSPRD_LOCKED;
+            osp_spin_unlock(&d->mutex);
+            wake_up_all(&d->blockq);
+            
+            r = 0
+        }
+        else
+            r = -EINVAL;
 
 	} else
 		r = -ENOTTY; /* unknown command */
