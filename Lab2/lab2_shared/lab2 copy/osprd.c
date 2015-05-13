@@ -378,12 +378,10 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
         
 		spin_lock(&d->mutex);
 
-<<<<<<< HEAD
+		
 		unsigned tickety_current = d->ticket_tail;
 		eprintk("tick no %i assigned to process %i\n", tickety_current, current->pid);
-=======
-		unsigned ticky_current = d->ticket_tail;
->>>>>>> origin/master
+
 		d->ticket_tail++;
 
 		spin_unlock(&d->mutex);
