@@ -169,8 +169,8 @@ void find_next_ticket(osprd_info_t* d)
 
 void remove_pid(osprd_info_t* d)
 {
-    pid_tracker* curr = d->pid_tracker_head;
-    pid_tracker* prev = NULL;
+    pid_tracker_node* curr = d->pid_tracker_head;
+    pid_tracker_node* prev = NULL;
     
     while (curr != NULL)
     {
