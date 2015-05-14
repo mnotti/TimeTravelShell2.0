@@ -93,6 +93,21 @@ print_token_type(token_t t)
 		case LESS_THAN:
 			printf("LESS THAN\n");
 			break;
+		case TWO_GREATER_THAN:
+			printf("TWO GREATER THANS\n");
+			break;
+		case LESS_AND:
+			printf("LESS AND\n");
+			break;
+		case GREATER_AND:
+			printf("GREATER AND\n");
+			break;
+		case LESS_GREATER:
+			printf("LESS GREATER\n");
+			break;
+		case GREATER_OR:
+			printf("GREATER OR\n");
+			break;
 		case PIPE:
 			printf("PIPE\n");
 			break;
@@ -420,6 +435,21 @@ print_type(token_t t)
 		case LESS_THAN:
 			printf("<");
 			break;
+		case TWO_GREATER_THAN:
+			printf("TWO GREATER THANS\n");
+			break;
+		case LESS_AND:
+			printf("LESS AND\n");
+			break;
+		case GREATER_AND:
+			printf("GREATER AND\n");
+			break;
+		case LESS_GREATER:
+			printf("LESS GREATER\n");
+			break;
+		case GREATER_OR:
+			printf("GREATER OR\n");
+			break;
 		case LEFT_PARENTHESIS:
 			printf("(");
 			break;
@@ -682,6 +712,11 @@ is_valid_token_stream(token_t *t)
       		case SEMICOLON:
       		case LESS_THAN:
       		case GREATER_THAN:
+      		case GREATER_AND:
+      		case GREATER_OR:
+      		case TWO_GREATER_THAN:
+      		case LESS_GREATER:
+      		case LESS_AND:
       			fprintf(stderr, "%i: ERROR: INVALID LEFT PARENTHESIS\n", t[i].line_num);
   					exit(1);
       		default:
@@ -705,6 +740,11 @@ is_valid_token_stream(token_t *t)
       		case SEMICOLON:
       		case LESS_THAN:
       		case GREATER_THAN:
+      		case GREATER_AND:
+      		case GREATER_OR:
+      		case TWO_GREATER_THAN:
+      		case LESS_GREATER:
+      		case LESS_AND:
       			fprintf(stderr, "%i: ERROR: INVALID RIGHT PARENTHESIS\n", t[i].line_num);
   					exit(1);
       		default:
@@ -714,13 +754,18 @@ is_valid_token_stream(token_t *t)
       	paren_error_line = t[i].line_num;
       	i++;
       	break;
-      case OR:
-      case AND:
-      case PIPE:
-      case SEMICOLON:
-      case GREATER_THAN:
-      case LESS_THAN:
-        if (t[i+1].type != END)
+	case OR:
+	case AND:
+	case PIPE:
+	case SEMICOLON:
+	case GREATER_THAN:
+	case LESS_THAN:
+	case GREATER_AND:
+	case GREATER_OR:
+	case TWO_GREATER_THAN:
+	case LESS_GREATER:
+  	case LESS_AND:
+ 	   if (t[i+1].type != END)
         {
         	switch (t[i+1].type)
         	{
@@ -816,14 +861,56 @@ tokenize(char* string, size_t len, size_t *token_array_size)
 					pos++;
 					break;
 				case '>':
-					token_buff[num_tokens].type = GREATER_THAN;
+					if (pos+1 != len)
+					{
+						switch(string[pos+1])
+						{
+							case '>':
+								token_buff[num_tokens].type = TWO_GREATER_THAN;
+								pos++;
+								break;
+							case '&':
+								token_buff[num_tokens].type = GREATER_AND;
+								pos++;
+								break;
+							case '|':
+								token_buff[num_tokens].type = GREATER_OR;
+								pos++;
+								break;
+							default:
+								token_buff[num_tokens].type = GREATER_THAN;
+								break;
+						}
+					}
+					else
+						token_buff[num_tokens].type = GREATER_THAN;
+
 					token_buff[num_tokens].token_word = NULL;
 					token_buff[num_tokens].line_num = line;
 					num_tokens++;
 					pos++;
 					break;
 				case '<':
-					token_buff[num_tokens].type = LESS_THAN;
+					if (pos+1 != len)
+					{
+						switch(string[pos+1])
+						{
+							case '&':
+								token_buff[num_tokens].type = LESS_AND;
+								pos++;
+								break;
+							case '>':
+								token_buff[num_tokens].type = LESS_GREATER;
+								pos++;
+								break;
+							default:
+								token_buff[num_tokens].type = LESS_THAN;
+								break;
+						}
+					}
+					else
+						token_buff[num_tokens].type = LESS_THAN;
+
 					token_buff[num_tokens].token_word = NULL;
 					token_buff[num_tokens].line_num = line;
 					num_tokens++;
@@ -1001,6 +1088,8 @@ handleTokenBuf(token_t* tok)
     					case END:
     						//printf("some token found in operator that is not supported!!!\n");
     						break;
+    					default:
+    						break;			//ADD CASE PLS
     				}
 
     				stackPushCom(&comStack, newCommand);
@@ -1066,6 +1155,8 @@ handleTokenBuf(token_t* tok)
     					case END:
     						//printf("some token found in operator that is not supported!!!\n");
     						break;
+    					default:
+    						break; 			// ADD CASE PLS
     				}
     				stackPushCom(&comStack, newCommand);
 
@@ -1172,6 +1263,8 @@ handleTokenBuf(token_t* tok)
   			i++;
   			//printf("encountered the something Unexpected (or the end)\n");
   			break;
+  		default:
+  			break;			//ADD CASE PLS
 
   	}
   	
@@ -1213,6 +1306,8 @@ make_command_stream (int (*get_next_byte) (void *),
 
   size_t token_array_size;
   token_t *t = tokenize(inputString, bufflen, &token_array_size);
+
+
 
 	size_t token_ptr_array_size;
 	token_t **token_ptr_array = get_token_arr(t, token_array_size, &token_ptr_array_size);
