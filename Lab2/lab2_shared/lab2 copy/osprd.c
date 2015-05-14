@@ -548,14 +548,13 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
             osp_spin_unlock(&d->mutex);
             wake_up_all(&d->blockq);
             
-            r = 0;
+            return 0;
         }
         else
-            r = -EINVAL;
+            return -EINVAL;
 
 	} else
-		r = -ENOTTY; /* unknown command */
-	return r;
+		return -ENOTTY; /* unknown command */
 }
 
 
