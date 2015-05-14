@@ -107,7 +107,7 @@ int did_find_pid(osprd_info_t* d);
 
 int did_find_pid(osprd_info_t* d)
 {
-	pid_tracker_node* it_temp;
+	pid_tracker_node* it_temp = d->pid_tracker_head;
 	while(it_temp != NULL)
 		{
 			if (it_temp->pid == current->pid)	//current ticket holder is on the exit list

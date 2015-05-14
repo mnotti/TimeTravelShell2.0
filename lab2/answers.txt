@@ -9,12 +9,12 @@
 # the end of the file.
 
 # Partner 1
-Name: Your Name Here
-Student ID: Your ID Here
-Email: Your Email Here
+Name: Markus Notti
+Student ID: 904269231
+Email: markusnotti@ucla.edu
 
 # Partner 2
-#Name: Partner's Name Here
+#Name: Kyle Baker
 #Student ID: Partner's ID Here
 #Email: Partner's Email Here
 
