@@ -52,10 +52,10 @@ typedef struct exited_node{
 	unsigned ticket_no;
 }exited_node;
 
-typedef struct pid_tracker{
+typedef struct pid_tracker_node{
 	struct pid_tracker* next;
 	int pid;
-}
+}pid_tracker_node;
 
 /* The internal representation of our device. */
 typedef struct osprd_info {
@@ -87,6 +87,7 @@ typedef struct osprd_info {
 	unsigned n_read_locks;			//ADDED
 	unsigned n_write_locks;			//ADDED
 	exited_node* exited_head;		//ADDED
+    pid_tracker* pid_tracker_head;  //ADDED
 
 } osprd_info_t;
 
@@ -96,7 +97,11 @@ static osprd_info_t osprds[NOSPRD];
 
 // Declare useful helper functions
 
+
+
 void find_next_ticket(osprd_info_t* d);
+void remove_pid(osprd_info_t* d);
+
 void find_next_ticket(osprd_info_t* d)
 {
 	///////////////////////
@@ -134,6 +139,35 @@ void find_next_ticket(osprd_info_t* d)
 	///////////////////////////////
 	//Next ticket should be found//
 	///////////////////////////////
+}
+
+void remove_pid(osprd_info_t* d)
+{
+    pid_tracker* curr = d->pid_tracker_head;
+    pid_tracker* prev = NULL;
+    
+    while (curr != NULL)
+    {
+        if (curr->pid == current->pid)
+        {
+            //If its at the front of the list
+            if(prev == NULL)
+            {
+                d->pid_tracker_head = d->pid_tracker_head->next;
+                kfree(curr);
+            }
+            // It's at the end/middle
+            else
+            {
+                prev->next = curr->next;
+                kfree(curr);
+            }
+            break;
+        }
+        prev = curr;
+        curr = curr->next;
+            
+    }
 }
 
 /*
@@ -338,6 +372,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
 			d->exited_head = temp_node;
 
 			find_next_ticket(d);
+            remove_pid(d);
 			spin_unlock(&d->mutex);
 
 			wake_up_all(&d->blockq);
@@ -475,6 +510,7 @@ int osprd_ioctl(struct inode *inode, struct file *filp,
                 d->n_read_locks--;
             
             filp->f_flags ^= F_OSPRD_LOCKED;
+            remove_pid(d);
             osp_spin_unlock(&d->mutex);
             wake_up_all(&d->blockq);
             
