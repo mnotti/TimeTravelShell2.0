@@ -14,9 +14,15 @@ Student ID: 904269231
 Email: markusnotti@ucla.edu
 
 # Partner 2
-#Name: Kyle Baker
-#Student ID: Partner's ID Here
-#Email: Partner's Email Here
+Name: Kyle Baker
+Student ID: 604273748
+Email: kylebaker37@gmail.com
 
 
 # Add any other information you'd like us to have below this line.
+
+Basic overview of the implementation:
+=====================================
+
+
+
