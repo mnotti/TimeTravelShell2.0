@@ -9,14 +9,19 @@
 # the end of the file.
 
 # Partner 1
-Name: Your Name Here
-Student ID: Your ID Here
-Email: Your Email Here
+Name: Kyle Baker
+Student ID: 604273748
+Email: kylebaker37@gmail.com
 
 # Partner 2
-#Name: Partner's Name Here
-#Student ID: Partner's ID Here
-#Email: Partner's Email Here
+Name: Markus Notti
+Student ID: 904269231
+Email: markusnotti@gmail.com
 
 
 # Add any other information you'd like us to have below this line.
+The code we wrote passes the given testcases and also passes deadlock cases we created for it too.
+To handle deadlock and killing of processes, we needed to create two seperate linked lists to 
+store in the structure osprd_info_t. In these linked lists we stored the ticket numbers of the 
+processes that were killed prematurely. In the other linked list we keep track of pids to
+prevent deadlock.
