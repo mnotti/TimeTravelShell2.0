@@ -45,9 +45,27 @@ command_indented_print (int indent, command_t c)
     }
 
   if (c->input)
-    printf ("<%s", c->input);
+  {
+    if(c->redirect == NORMAL_IO_REDIRECT)
+      printf ("<%s", c->input);
+    else if(c->redirect == LESS_AND_REDIRECT)
+      printf ("<&%s", c->input);
+    else if(c->redirect == LESS_GREATER_REDIRECT)
+      printf ("<>%s", c->input);
+
+  }
   if (c->output)
-    printf (">%s", c->output);
+  { 
+    if(c->redirect == NORMAL_IO_REDIRECT)
+      printf (">%s", c->output);
+    else if(c->redirect == TWO_GREATER_THAN_REDIRECT)
+      printf (">>%s", c->output);
+    else if(c->redirect == GREATER_AND_REDIRECT)
+      printf (">&%s", c->output);
+    else if(c->redirect == GREATER_OR_REDIRECT)
+      printf(">|%s", c->output);
+
+  }
 }
 
 void

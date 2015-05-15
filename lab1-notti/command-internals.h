@@ -25,13 +25,24 @@ enum token_type
   RIGHT_PARENTHESIS,
   WORD_TOKEN,
   COMMENT,
-  TWO_GREATER_THAN,
-  LESS_AND,
-  GREATER_AND,
-  LESS_GREATER,
-  GREATER_OR,
-  UNKNOWN_TOKEN,
-  END,
+  TWO_GREATER_THAN,   //NEW
+  LESS_AND,           //NEW
+  GREATER_AND,        //NEW
+  LESS_GREATER,       //NEW
+  GREATER_OR,         //NEW
+  UNKNOWN_TOKEN,      
+  END,                
+};
+
+enum redirect_type
+{
+  NORMAL_IO_REDIRECT,
+  TWO_GREATER_THAN_REDIRECT,   //NEW
+  LESS_AND_REDIRECT,           //NEW
+  GREATER_AND_REDIRECT,        //NEW
+  LESS_GREATER_REDIRECT,       //NEW
+  GREATER_OR_REDIRECT,         //NEW
+  NO_REDIRECT,
 };
 
 //added by kyyyyyle
@@ -70,6 +81,8 @@ typedef struct stackListCom{
 struct command
 {
   enum command_type type;
+
+  enum redirect_type redirect;
 
   // Exit status, or -1 if not known (e.g., because it has not exited yet).
   int status;

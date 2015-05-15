@@ -93,19 +93,19 @@ print_token_type(token_t t)
 		case LESS_THAN:
 			printf("LESS THAN\n");
 			break;
-		case TWO_GREATER_THAN:
+		case TWO_GREATER_THAN:					//NEW
 			printf("TWO GREATER THANS\n");
 			break;
-		case LESS_AND:
+		case LESS_AND:							//NEW
 			printf("LESS AND\n");
 			break;
-		case GREATER_AND:
+		case GREATER_AND:						//NEW
 			printf("GREATER AND\n");
 			break;
-		case LESS_GREATER:
+		case LESS_GREATER:						//NEW
 			printf("LESS GREATER\n");
 			break;
-		case GREATER_OR:
+		case GREATER_OR:						//NEW
 			printf("GREATER OR\n");
 			break;
 		case PIPE:
@@ -1061,6 +1061,7 @@ handleTokenBuf(token_t* tok)
   					newCommand->u.command[0] = command1;
   					newCommand->u.command[1] = command2;
   					newCommand->status = -1;	//TODO change statussss
+  					newCommand->redirect = NO_REDIRECT;
   					
   					//select the type of the new combined command to be created from popped commands and operator
   					switch(opTok->type)
@@ -1127,6 +1128,7 @@ handleTokenBuf(token_t* tok)
   					//newCommand->status = tok[i].line_num; 
   					newCommand->u.command[0] = command1;
   					newCommand->u.command[1] = command2;
+  					newCommand->redirect = NO_REDIRECT;
   					newCommand->status = -1;	//TODO change statussss
   					
   					//select the type of the new combined command to be created from popped commands and operator
@@ -1177,18 +1179,51 @@ handleTokenBuf(token_t* tok)
     					newCommand->type = SUBSHELL_COMMAND;
     					newCommand->u.subshell_command = command1;
   						newCommand->status = -1;
+  						newCommand->redirect = NO_REDIRECT;
 
 						//search for greater than/ less than
 						if(tok[i+1].type == LESS_THAN)
 						  {
 						    newCommand->u.subshell_command->input = tok[i+2].token_word;
+						    newCommand->redirect = NORMAL_IO_REDIRECT;
 						    i+=2;
 						  }
 						else if(tok[i+1].type == GREATER_THAN)
 						  {
 						    newCommand->u.subshell_command->output = tok[i+2].token_word;
+						    newCommand->redirect = NORMAL_IO_REDIRECT;
 						    i+=2;
 						  }
+		  				else if(tok[i+1].type == GREATER_AND)
+		  				{
+		  					newCommand->u.subshell_command->output = tok[i+2].token_word;
+		  					newCommand->redirect = GREATER_AND_REDIRECT;
+		  					i+=2;
+		  				}
+		  				else if(tok[i+1].type == GREATER_OR)
+		  				{
+		  					newCommand->u.subshell_command->output = tok[i+2].token_word;
+		  					newCommand->redirect = GREATER_OR_REDIRECT;
+		  					i+=2;
+		  				}  
+		   				else if(tok[i+1].type == TWO_GREATER_THAN)
+		  				{
+		  					newCommand->u.subshell_command->output = tok[i+2].token_word;
+		  					newCommand->redirect = TWO_GREATER_THAN_REDIRECT;
+		  					i+=2;
+		  				}
+		  				else if(tok[i+1].type == LESS_AND)
+		  				{
+		  					newCommand->u.subshell_command->input = tok[i+2].token_word;
+		  					newCommand->redirect = LESS_AND_REDIRECT;
+		  					i+=2;
+		  				}
+		  				else if(tok[i+1].type == LESS_GREATER)
+		  				{
+		  					newCommand->u.subshell_command->input = tok[i+2].token_word;
+		  					newCommand->redirect = LESS_GREATER_REDIRECT;
+		  					i+=2;
+		  				} 								  
 
 						
   						stackPushCom(&comStack, newCommand);
@@ -1210,6 +1245,7 @@ handleTokenBuf(token_t* tok)
   			newCommand->input = NULL;
   			newCommand->output = NULL;
   			newCommand->type = SIMPLE_COMMAND;
+  			newCommand->redirect = NO_REDIRECT;
 
   			int wrdsAlctd = 4;
   			newCommand->u.word = malloc( sizeof(char*) * (wrdsAlctd) );	//TODO: add reallocation if too big 	//TODO: maybe free???
@@ -1219,7 +1255,14 @@ handleTokenBuf(token_t* tok)
   			wordCount++;
 
   			//now cycle thru next tokens until reaching something not a word token
-  			while (((tok[i].type == WORD_TOKEN)  || (tok[i].type == GREATER_THAN) || (tok[i].type == LESS_THAN))	)//TODO: account for inputs/outputs/status when creating commands //used to be a condition (i < len)
+  			while (((tok[i].type == WORD_TOKEN)  || 
+  					(tok[i].type == GREATER_THAN) || 
+  					(tok[i].type == LESS_THAN)  || 
+  					(tok[i].type == LESS_AND)|| 
+  					(tok[i].type == LESS_GREATER)|| 
+  					(tok[i].type == GREATER_OR)|| 
+  					(tok[i].type == GREATER_AND)|| 
+  					(tok[i].type == TWO_GREATER_THAN))	)//TODO: account for inputs/outputs/status when creating commands //used to be a condition (i < len)
   			{
   				//check if enough space in words
   				//if necessary, realloc
@@ -1239,13 +1282,46 @@ handleTokenBuf(token_t* tok)
   				else if(tok[i].type == LESS_THAN)
   				{
   					newCommand->input = tok[i+1].token_word;
+  					newCommand->redirect = NORMAL_IO_REDIRECT;
+
   					i+=2;
   				}
   				else if(tok[i].type == GREATER_THAN)
   				{
   					newCommand->output = tok[i+1].token_word;
+  					newCommand->redirect = NORMAL_IO_REDIRECT;
   					i+=2;
   				}
+  				else if(tok[i].type == GREATER_AND)
+  				{
+  					newCommand->output = tok[i+1].token_word;
+  					newCommand->redirect = GREATER_AND_REDIRECT;
+  					i+=2;
+  				}
+  				else if(tok[i].type == GREATER_OR)
+  				{
+  					newCommand->output = tok[i+1].token_word;
+  					newCommand->redirect = GREATER_OR_REDIRECT;
+  					i+=2;
+  				}  
+   				else if(tok[i].type == TWO_GREATER_THAN)
+  				{
+  					newCommand->output = tok[i+1].token_word;
+  					newCommand->redirect = TWO_GREATER_THAN_REDIRECT;
+  					i+=2;
+  				}
+  				else if(tok[i].type == LESS_AND)
+  				{
+  					newCommand->input = tok[i+1].token_word;
+  					newCommand->redirect = LESS_AND_REDIRECT;
+  					i+=2;
+  				}
+  				else if(tok[i].type == LESS_GREATER)
+  				{
+  					newCommand->input = tok[i+1].token_word;
+  					newCommand->redirect = LESS_GREATER_REDIRECT;
+  					i+=2;
+  				}  		
   			}
   			newCommand->u.word[wordCount] = '\0';
   			stackPushCom(&comStack, newCommand); 
