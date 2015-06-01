@@ -423,66 +423,81 @@ ospfs_dir_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *ign
 static int
 ospfs_dir_readdir(struct file *filp, void *dirent, filldir_t filldir)
 {
-	struct inode *dir_inode = filp->f_dentry->d_inode;
-	ospfs_inode_t *dir_oi = ospfs_inode(dir_inode->i_ino);
-	uint32_t f_pos = filp->f_pos;
-	int r = 0;		/* Error return value, if any */
-	int ok_so_far = 0;	/* Return value from 'filldir' */
-
-	// f_pos is an offset into the directory's data, plus two.
-	// The "plus two" is to account for "." and "..".
-	if (r == 0 && f_pos == 0) {
-		ok_so_far = filldir(dirent, ".", 1, f_pos, dir_inode->i_ino, DT_DIR);
-		if (ok_so_far >= 0)
-			f_pos++;
-	}
-
-	if (r == 0 && ok_so_far >= 0 && f_pos == 1) {
-		ok_so_far = filldir(dirent, "..", 2, f_pos, filp->f_dentry->d_parent->d_inode->i_ino, DT_DIR);
-		if (ok_so_far >= 0)
-			f_pos++;
-	}
-
-	// actual entries
-	while (r == 0 && ok_so_far >= 0 && f_pos >= 2) {
-		ospfs_direntry_t *od;
-		ospfs_inode_t *entry_oi;
-
-		/* If at the end of the directory, set 'r' to 1 and exit
-		 * the loop.  For now we do this all the time.
-		 *
-		 * EXERCISE: Your code here */
-		r = 1;		/* Fix me! */
-		break;		/* Fix me! */
-
-		/* Get a pointer to the next entry (od) in the directory.
-		 * The file system interprets the contents of a
-		 * directory-file as a sequence of ospfs_direntry structures.
-		 * You will find 'f_pos' and 'ospfs_inode_data' useful.
-		 *
-		 * Then use the fields of that file to fill in the directory
-		 * entry.  To figure out whether a file is a regular file or
-		 * another directory, use 'ospfs_inode' to get the directory
-		 * entry's corresponding inode, and check out its 'oi_ftype'
-		 * member.
-		 *
-		 * Make sure you ignore blank directory entries!  (Which have
-		 * an inode number of 0.)
-		 *
-		 * If the current entry is successfully read (the call to
-		 * filldir returns >= 0), or the current entry is skipped,
-		 * your function should advance f_pos by the proper amount to
-		 * advance to the next directory entry.
-		 */
-
-		/* EXERCISE: Your code here */
-	}
-
-	// Save the file position and return!
-	filp->f_pos = f_pos;
-	return r;
+    struct inode *dir_inode = filp->f_dentry->d_inode;
+    ospfs_inode_t *dir_oi = ospfs_inode(dir_inode->i_ino);
+    uint32_t f_pos = filp->f_pos;
+    int r = 0;		/* Error return value, if any */
+    int ok_so_far = 0;	/* Return value from 'filldir' */
+    
+    uint32_t offset_t = 0;
+    
+    // f_pos is an offset into the directory's data, plus two.
+    // The "plus two" is to account for "." and "..".
+    if (r == 0 && f_pos == 0) {
+        ok_so_far = filldir(dirent, ".", 1, f_pos, dir_inode->i_ino, DT_DIR);
+        if (ok_so_far >= 0)
+            f_pos++;
+    }
+    
+    if (r == 0 && ok_so_far >= 0 && f_pos == 1) {
+        ok_so_far = filldir(dirent, "..", 2, f_pos, filp->f_dentry->d_parent->d_inode->i_ino, DT_DIR);
+        if (ok_so_far >= 0)
+            f_pos++;
+    }
+    
+    // actual entries
+    while (r == 0 && ok_so_far >= 0 && f_pos >= 2) {
+        ospfs_direntry_t *od;
+        ospfs_inode_t *entry_oi;
+        
+        /* If at the end of the directory, set 'r' to 1 and exit
+         * the loop.  For now we do this all the time.
+         *
+         * EXERCISE: Your code here DONE */
+        offset_t = (f_pos-2)*OSPFS_DIRENTRY_SIZE;
+        if (offset_t >= dir_oi->oi_size) {r = 1; break;}
+        
+        /*Get a pointer to the next entry (od) in the directory.
+         * The file system interprets the contents of a
+         * directory-file as a sequence of ospfs_direntry structures.
+         * You will find 'f_pos' and 'ospfs_inode_data' useful.
+         *
+         * Then use the fields of that file to fill in the directory
+         * entry.  To figure out whether a file is a regular file or
+         * another directory, use 'ospfs_inode' to get the directory
+         * entry's corresponding inode, and check out its 'oi_ftype'
+         * member.
+         *
+         * Make sure you ignore blank directory entries!  (Which have
+         * an inode number of 0.)
+         *
+         * If the current entry is successfully read (the call to
+         * filldir returns >= 0), or the current entry is skipped,
+         * your function should advance f_pos by the proper amount to
+         * advance to the next directory entry.
+         */
+        
+        /* EXERCISE: Your code here DONE*/
+        
+        od = ospfs_inode_data(dir_oi, offset_t);
+        if (od->od_ino == 0) {f_pos++; continue;}
+        entry_oi = ospfs_inode(od->od_ino);
+        
+        if (entry_oi->oi_ftype == OSPFS_FTYPE_REG)
+            ok_so_far = filldir(dirent, od->od_name, strlen(od->od_name), f_pos, od->od_ino, DT_REG);
+        else if (entry_oi->oi_ftype == OSPFS_FTYPE_DIR)
+            ok_so_far = filldir(dirent, od->od_name, strlen(od->od_name), f_pos, od->od_ino, DT_DIR);
+        else if (entry_oi->oi_ftype == OSPFS_FTYPE_SYMLINK)
+            ok_so_far = filldir(dirent, od->od_name, strlen(od->od_name), f_pos, od->od_ino, DT_LNK);
+        else {r = 1; continue;}
+        
+        if (ok_so_far >= 0) f_pos++;
+    }
+    
+    // Save the file position and return!
+    filp->f_pos = f_pos;	
+    return r;
 }
-
 
 // ospfs_unlink(dirino, dentry)
 //   This function is called to remove a file.
@@ -552,8 +567,17 @@ ospfs_unlink(struct inode *dirino, struct dentry *dentry)
 static uint32_t
 allocate_block(void)
 {
-	/* EXERCISE: Your code here */
-	return 0;
+    // EXERCISE: Your code here DONE
+    void *all_map = ospfs_block(OSPFS_FREEMAP_BLK);
+    uint32_t count;
+    
+    for (count = 0; count < ospfs_super->os_nblocks; count++) {
+        if (bitvector_test(all_map, count) != 0) {
+            bitvector_clear(all_map, count);
+            return count;
+        }
+    }
+    return 0;
 }
 
 
@@ -571,9 +595,10 @@ allocate_block(void)
 static void
 free_block(uint32_t blockno)
 {
-	/* EXERCISE: Your code here */
+    // EXERCISE: Your code here DONE
+    void *f_map = ospfs_block(OSPFS_FREEMAP_BLK);
+    bitvector_set(f_map, blockno);
 }
-
 
 /*****************************************************************************
  * FILE OPERATIONS
@@ -1141,17 +1166,37 @@ find_direntry(ospfs_inode_t *dir_oi, const char *name, int namelen)
 static ospfs_direntry_t *
 create_blank_direntry(ospfs_inode_t *dir_oi)
 {
-	// Outline:
-	// 1. Check the existing directory data for an empty entry.  Return one
-	//    if you find it.
-	// 2. If there's no empty entries, add a block to the directory.
-	//    Use ERR_PTR if this fails; otherwise, clear out all the directory
-	//    entries and return one of them.
-
-	/* EXERCISE: Your code here. */
-	return ERR_PTR(-EINVAL); // Replace this line
+    // Outline:
+    // 1. Check the existing directory data for an empty entry.  Return one
+    //    if you find it.
+    // 2. If there's no empty entries, add a block to the directory.
+    //    Use ERR_PTR if this fails; otherwise, clear out all the directory
+    //    entries and return one of them.
+    
+    // EXERCISE: Your code here.
+    
+    uint32_t sze;
+    ospfs_direntry_t *direntry_n;
+    int return_value;
+    
+    for (sze = 0; sze < dir_oi->oi_size; sze += OSPFS_DIRENTRY_SIZE) {
+        direntry_n = ospfs_inode_data(dir_oi, sze);
+        if (direntry_n->od_ino == 0)
+            return direntry_n;
+    }
+    
+    return_value = add_block(dir_oi);
+    if (return_value < 0)
+        return ERR_PTR(return_value);
+    
+    
+    direntry_n = ospfs_inode_data(dir_oi, sze);
+    if (direntry_n->od_ino != 0)
+        return ERR_PTR(-EIO);
+    
+    
+    return direntry_n;
 }
-
 // ospfs_link(src_dentry, dir, dst_dentry
 //   Linux calls this function to create hard links.
 //   It is the ospfs_dir_inode_ops.link callback.
@@ -1219,23 +1264,57 @@ ospfs_link(struct dentry *src_dentry, struct inode *dir, struct dentry *dst_dent
 static int
 ospfs_create(struct inode *dir, struct dentry *dentry, int mode, struct nameidata *nd)
 {
-	ospfs_inode_t *dir_oi = ospfs_inode(dir->i_ino);
-	uint32_t entry_ino = 0;
-	/* EXERCISE: Your code here. */
-	return -EINVAL; // Replace this line
-
-	/* Execute this code after your function has successfully created the
-	   file.  Set entry_ino to the created file's inode number before
-	   getting here. */
-	{
-		struct inode *i = ospfs_mk_linux_inode(dir->i_sb, entry_ino);
-		if (!i)
-			return -ENOMEM;
-		d_instantiate(dentry, i);
-		return 0;
-	}
+    ospfs_inode_t *dir_oi = ospfs_inode(dir->i_ino);
+    uint32_t entry_ino = 0;
+    
+    // My code
+    ospfs_inode_t *new_entry_inode;
+    ospfs_direntry_t *new_entry;
+    uint32_t inode_num = 0;
+    
+    if (dentry->d_name.len > OSPFS_MAXNAMELEN)
+        return -ENAMETOOLONG;
+    if (find_direntry(dir_oi, dentry->d_name.name, dentry->d_name.len))
+        return -EEXIST;
+    new_entry = create_blank_direntry(dir_oi);
+    if (IS_ERR(new_entry)) {return PTR_ERR(new_entry);}
+    
+    for (inode_num = 0; inode_num < ospfs_super->os_ninodes; inode_num++) {
+        new_entry_inode = ospfs_inode(inode_num);
+        if (new_entry_inode->oi_nlink == 0)
+            break;
+    }
+    
+    entry_ino = inode_num;
+    
+    if (inode_num == ospfs_super->os_ninodes)
+        return -ENOSPC;
+    
+    
+    memset(new_entry_inode, 0, OSPFS_INODESIZE);
+    
+    new_entry_inode->oi_size = 0;
+    new_entry_inode->oi_ftype = OSPFS_FTYPE_REG;
+    new_entry_inode->oi_nlink = 1;
+    new_entry_inode->oi_mode = mode;
+    
+    new_entry->od_ino = inode_num;
+    memcpy(new_entry->od_name, dentry->d_name.name, dentry->d_name.len);
+    new_entry->od_name[dentry->d_name.len] = '\0';
+    
+    entry_ino = inode_num;
+    
+    // Execute this code after your function has successfully created the
+    // file.  Set entry_ino to the created file's inode number before
+    // getting here.
+    {
+        struct inode *i = ospfs_mk_linux_inode(dir->i_sb, entry_ino);
+        if (!i)
+            return -ENOMEM;
+        d_instantiate(dentry, i);
+        return 0;
+    }
 }
-
 
 // ospfs_symlink(dirino, dentry, symname)
 //   Linux calls this function to create a symbolic link.
