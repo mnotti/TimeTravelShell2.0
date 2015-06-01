@@ -632,8 +632,14 @@ free_block(uint32_t blockno)
 static int32_t
 indir2_index(uint32_t b)
 {
-	// Your code here.
-	return -1;
+	uint32_t index;
+
+	if(b < OSPFS_NDIRECT + OSPFS_NINDIRECT)
+		index = -1;
+	else
+		index = 0;
+
+	return index;
 }
 
 
@@ -651,12 +657,21 @@ indir2_index(uint32_t b)
 static int32_t
 indir_index(uint32_t b)
 {
-	// Your code here.
-	return -1;
+	int32_t index;
+
+	if (b < OSPFS_NDIRECT)
+		index = -1;
+	else
+		index = (b - OSPFS_NDIRECT) / OSPFS_NINDIRECT;
+
+	if (b > OSPFS_NDIRECT + OSPFS_NINDIRECT)
+		index = (b - OSPFS_NINDIRECT - OSPFS_NDIRECT) / OSPFS_NINDIRECT;
+
+	return index;
 }
 
 
-// int32_t indir_index(uint32_t b)
+// int32_t direct_index(uint32_t b)
 //	Returns the indirect block index for file block b.
 //
 // Inputs:  b -- the zero-based index of the file block
@@ -668,8 +683,14 @@ indir_index(uint32_t b)
 static int32_t
 direct_index(uint32_t b)
 {
-	// Your code here.
-	return -1;
+	int32_t index;
+
+	if(b < OSPFS_NDIRECT)
+		index = b;
+	else
+		index = (b - OSPFS_NDIRECT) % OSPFS_NINDIRECT;
+
+	return index;
 }
 
 
@@ -708,103 +729,197 @@ direct_index(uint32_t b)
 static int
 add_block(ospfs_inode_t *oi)
 {
-	// current number of blocks in file
 	uint32_t n = ospfs_size2nblocks(oi->oi_size);
 
-	// keep track of allocations to free in case of -ENOSPC
-	uint32_t *allocated[2] = { 0, 0 };
-
-	uint32_t dir_index = direct_index(n);
-
-	uint32_t indirect_index = indir_index(n);
-	uint32_t indirect_blk = oi->oi_indirect;
-	uint32_t* indirect_blk_data;
-
-	uint32_t indirect2_index = indir2_index(n);
-	uint32_t indirect2_blk = oi->oi_indirect2;
-	uint32_t* indirect2_blk_data;
-
-	eprintk("dir index = %i\n indir index = %i\nindir2 index = %i\n", dir_index, indirect_index, indirect2_index);
-
-
+	//1) allocate the new block
 	uint32_t new_blk = allocate_block();
-	if(!new_blk)
+	if (!new_blk)
 		return -ENOSPC;
 
-	allocated[0] = new_blk;
-
-	//data stored in new block
-	uint32_t* new_blk_data;
-
-	new_blk_data = ospfs_block(new_blk);
+	uint32_t *new_blk_data = ospfs_block(new_blk);
 	memset(new_blk_data, 0, OSPFS_BLKSIZE);
 
-	//need to use indirect2 block
-	/////
-	if(indirect2_index == 0)
+	uint32_t dir_index = direct_index(n);
+	uint32_t indirect_index = indir_index(n);
+	uint32_t indirect2_index = indir2_index(n);
+
+	//2) If only direct block section needed
+	if(indirect_index < 0)
 	{
-		//needs to allocate block for indirect2
-		if(indirect2_blk == 0)
-		{
-			indirect2_blk = allocate_block();
-			if(!indirect2_blk)
-			{
-				//error
-				free_block(allocated[0]);
-				return -ENOSPC;
-			}
-			allocated[1] = indirect2_blk;
-			indirect2_blk_data = ospfs_block(indirect2_blk);
-			memset(indirect_blk_data, 0, OSPFS_BLKSIZE);
-		}
-		else
-		{
-			indirect2_blk_data = ospfs_block(indirect2_blk);
-		}
-		indirect_blk = indirect2_blk_data[indirect_index];
-	}
-
-	//need to use indirect block
-	if(indirect_index >= 0)
-	{	
-		//need to allocate indirect block
-		if(indirect_blk == 0)
-		{
-			indirect_blk = allocate_block();
-			if(!indirect_blk)
-			{
-				free_block(allocated[0]);
-				if(allocated[1])
-					free_block(allocated[1]);
-				return -ENOSPC;
-			}
-			indirect_blk_data = ospfs_block(indirect_blk);
-			memset(indirect_blk_data, 0, OSPFS_BLKSIZE);
-		}
-		else
-		{
-			indirect_blk_data = ospfs_block(indirect_blk);
-		}
-	}
-
-
-	//if no indirects or indirect2s are needed
-	if(indirect_index < 0 && indirect2_index != 0)
 		oi->oi_direct[dir_index] = new_blk;
-	else if(indirect2_blk != 0)
-	{
-		indirect_blk_data[dir_index] = new_blk;
-		oi->oi_indirect = indirect_blk;
+		oi->oi_size = (n + 1) * (OSPFS_BLKSIZE);
+		return 0;
 	}
+
+	//3) If indirect block is needed, but not indirect2
+	else if(indirect2_index < 0)
+	{
+		if (oi->oi_indirect == 0)
+		{
+			//allocate a new indirect block
+			uint32_t new_indir_blk = allocate_block();
+			if(!new_indir_blk)
+			{
+				free_block(new_blk);
+				return -ENOSPC;
+			}
+			uint32_t* new_indir_blk_data = ospfs_block(new_indir_blk);
+			memset(new_indir_blk_data, 0, OSPFS_BLKSIZE);
+
+			//updates the inode to have newly allocated indirect block with a new block as first member of indirect data
+			new_indir_blk_data[dir_index] = new_blk;
+			oi->oi_indirect = new_indir_blk;
+		}
+		else
+		{
+			//if no new indirect block neeced to be allocated
+			uint32_t* old_indir_blk_data = ospfs_block(oi->oi_indirect);
+			old_indir_blk_data[dir_index] = new_blk;
+		}
+	}
+
+	//4)if indirect 2 is needed
 	else
 	{
-		indirect_blk_data[dir_index] = new_blk;
-		indirect2_blk_data[indirect_index] = indirect_blk;
+		uint32_t allocated_indirect2 = 0;
+		uint32_t indirect2_blk = oi->oi_indirect2;
+		uint32_t* indir2_blk_data = ospfs_block(indirect2_blk);
+
+		uint32_t indir_blk = indir2_blk_data[indirect_index];
+		uint32_t* indir_blk_data = ospfs_block(indir_blk);
+
+
+		if (indirect2_blk == 0)
+		{
+			//allocate new one
+			indirect2_blk = allocate_block();
+			allocated_indirect2 = 1;
+			if(!indirect2_blk)
+			{
+				free_block(new_blk);
+				return -ENOSPC;
+			}
+			indir2_blk_data = ospfs_block(indirect2_blk);
+			memset(indir2_blk_data, 0, OSPFS_BLKSIZE);
+
+		}
+		if(indir2_blk_data[indirect_index] == 0)
+		{
+			//allocate indir
+			indir_blk = allocate_block();
+			if(!indir_blk)
+			{
+				free_block(new_blk);
+				return -ENOSPC;
+				if (allocated_indirect2)
+					free_block(indirect2_blk);
+			}
+			indir_blk_data = ospfs_block(indir_blk);
+			memset(indir_blk_data, 0, OSPFS_BLKSIZE);
+		}
+
+		indir_blk_data[dir_index] = new_blk;
+		indir2_blk_data[indirect_index] = indir_blk;
 		oi->oi_indirect2 = indirect2_blk;
+
 	}
 
 	oi->oi_size = (n + 1) * (OSPFS_BLKSIZE);
 	return 0;
+	// // current number of blocks in file
+	// uint32_t n = ospfs_size2nblocks(oi->oi_size);
+
+	// // keep track of allocations to free in case of -ENOSPC
+	// //uint32_t *allocated[2] = { 0, 0 };
+	// int indir2_blk_allocated = 0;
+
+	// uint32_t dir_index = direct_index(n);
+
+	// uint32_t indirect_index = indir_index(n);
+	// uint32_t indirect_blk = oi->oi_indirect;
+	// uint32_t* indirect_blk_data = NULL;
+
+	// uint32_t indirect2_index = indir2_index(n);
+	// uint32_t indirect2_blk = oi->oi_indirect2;
+	// uint32_t* indirect2_blk_data = NULL;
+
+	// //eprintk("dir index = %i\n indir index = %i\nindir2 index = %i\n", dir_index, indirect_index, indirect2_index);
+
+
+	// uint32_t new_blk = allocate_block();
+	// if(!new_blk)
+	// 	return -ENOSPC;
+
+	// //data stored in new block
+	// uint32_t* new_blk_data = NULL;
+
+	// new_blk_data = ospfs_block(new_blk);
+	// memset(new_blk_data, 0, OSPFS_BLKSIZE);
+
+	// //need to use indirect2 block
+	// /////
+	// if(indirect2_index == 0)
+	// {
+	// 	//needs to allocate block for indirect2
+	// 	if(indirect2_blk == 0)
+	// 	{
+	// 		indirect2_blk = allocate_block();
+	// 		if(!indirect2_blk)
+	// 		{
+	// 			//error
+	// 			free_block(new_blk);
+	// 			return -ENOSPC;
+	// 		}
+	// 		//allocated[1] = &indirect2_blk;
+	// 		indir2_blk_allocated = 1;
+	// 		indirect2_blk_data = ospfs_block(indirect2_blk);
+	// 		memset(indirect_blk_data, 0, OSPFS_BLKSIZE);
+	// 	}
+	// 	else
+	// 	{
+	// 		indirect2_blk_data = ospfs_block(indirect2_blk);
+	// 	}
+	// 	indirect_blk = indirect2_blk_data[indirect_index];
+	// }
+
+	// //need to use indirect block
+	// if(indirect_index >= 0)
+	// {	
+	// 	//need to allocate indirect block
+	// 	if(indirect_blk == 0)
+	// 	{
+	// 		indirect_blk = allocate_block();
+	// 		if(!indirect_blk)
+	// 		{
+	// 			free_block(new_blk);
+	// 			if(indir2_blk_allocated)
+	// 				free_block(indirect2_blk);
+	// 			return -ENOSPC;
+	// 		}
+	// 		indirect_blk_data = ospfs_block(indirect_blk);
+	// 		memset(indirect_blk_data, 0, OSPFS_BLKSIZE);
+	// 	}
+	// 	else
+	// 	{
+	// 		indirect_blk_data = ospfs_block(indirect_blk);
+	// 	}
+	// }
+
+
+	// //if no indirects or indirect2s are needed
+	// if(indirect_index < 0 && indirect2_index != 0)
+	// 	oi->oi_direct[dir_index] = new_blk;
+	// else if(indirect2_blk != 0)
+	// {
+	// 	indirect_blk_data[dir_index] = new_blk;
+	// 	oi->oi_indirect = indirect_blk;
+	// }
+	// else
+	// {
+	// 	indirect_blk_data[dir_index] = new_blk;
+	// 	indirect2_blk_data[indirect_index] = indirect_blk;
+	// 	oi->oi_indirect2 = indirect2_blk;
+	// }
 
 	
 }
@@ -1053,7 +1168,7 @@ ospfs_write(struct file *filp, const char __user *buffer, size_t count, loff_t *
 
 	// Support files opened with the O_APPEND flag.  To detect O_APPEND,
 	// use struct file's f_flags field and the O_APPEND bit.
-	/* EXERCISE: Your code here */
+
 	//DONE
 	if (filp->f_flags &  O_APPEND)
 		*f_pos = oi->oi_size;
