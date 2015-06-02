@@ -857,12 +857,12 @@ remove_block(ospfs_inode_t *oi)
 	// current number of blocks in file
 	uint32_t n = ospfs_size2nblocks(oi->oi_size);
 
-	if(n == 0)
+	if(n < 0)
 		return -EIO;
 	n--;
 
 	//if size of the file is 0 blocks
-	if(n == 0)
+	if(n < 0)
 		return 0;
 
 	int32_t dir_index = direct_index(n);
@@ -1527,6 +1527,6 @@ module_init(init_ospfs_fs)
 module_exit(exit_ospfs_fs)
 
 // Information about the module
-MODULE_AUTHOR("Skeletor");
+MODULE_AUTHOR("Markus Notti and Kyle Baker");
 MODULE_DESCRIPTION("OSPFS");
 MODULE_LICENSE("GPL");
