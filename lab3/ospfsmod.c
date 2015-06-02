@@ -739,9 +739,9 @@ add_block(ospfs_inode_t *oi)
 	uint32_t *new_blk_data = ospfs_block(new_blk);
 	memset(new_blk_data, 0, OSPFS_BLKSIZE);
 
-	uint32_t dir_index = direct_index(n);
-	uint32_t indirect_index = indir_index(n);
-	uint32_t indirect2_index = indir2_index(n);
+	int32_t dir_index = direct_index(n);
+	int32_t indirect_index = indir_index(n);
+	int32_t indirect2_index = indir2_index(n);
 
 	//2) If only direct block section needed
 	if(indirect_index < 0)
@@ -750,7 +750,6 @@ add_block(ospfs_inode_t *oi)
 		oi->oi_size = (n + 1) * (OSPFS_BLKSIZE);
 		return 0;
 	}
-
 	//3) If indirect block is needed, but not indirect2
 	else if(indirect2_index < 0)
 	{
@@ -810,9 +809,9 @@ add_block(ospfs_inode_t *oi)
 			if(!indir_blk)
 			{
 				free_block(new_blk);
-				return -ENOSPC;
 				if (allocated_indirect2)
 					free_block(indirect2_blk);
+				return -ENOSPC;
 			}
 			indir_blk_data = ospfs_block(indir_blk);
 			memset(indir_blk_data, 0, OSPFS_BLKSIZE);
@@ -826,101 +825,6 @@ add_block(ospfs_inode_t *oi)
 
 	oi->oi_size = (n + 1) * (OSPFS_BLKSIZE);
 	return 0;
-	// // current number of blocks in file
-	// uint32_t n = ospfs_size2nblocks(oi->oi_size);
-
-	// // keep track of allocations to free in case of -ENOSPC
-	// //uint32_t *allocated[2] = { 0, 0 };
-	// int indir2_blk_allocated = 0;
-
-	// uint32_t dir_index = direct_index(n);
-
-	// uint32_t indirect_index = indir_index(n);
-	// uint32_t indirect_blk = oi->oi_indirect;
-	// uint32_t* indirect_blk_data = NULL;
-
-	// uint32_t indirect2_index = indir2_index(n);
-	// uint32_t indirect2_blk = oi->oi_indirect2;
-	// uint32_t* indirect2_blk_data = NULL;
-
-	// //eprintk("dir index = %i\n indir index = %i\nindir2 index = %i\n", dir_index, indirect_index, indirect2_index);
-
-
-	// uint32_t new_blk = allocate_block();
-	// if(!new_blk)
-	// 	return -ENOSPC;
-
-	// //data stored in new block
-	// uint32_t* new_blk_data = NULL;
-
-	// new_blk_data = ospfs_block(new_blk);
-	// memset(new_blk_data, 0, OSPFS_BLKSIZE);
-
-	// //need to use indirect2 block
-	// /////
-	// if(indirect2_index == 0)
-	// {
-	// 	//needs to allocate block for indirect2
-	// 	if(indirect2_blk == 0)
-	// 	{
-	// 		indirect2_blk = allocate_block();
-	// 		if(!indirect2_blk)
-	// 		{
-	// 			//error
-	// 			free_block(new_blk);
-	// 			return -ENOSPC;
-	// 		}
-	// 		//allocated[1] = &indirect2_blk;
-	// 		indir2_blk_allocated = 1;
-	// 		indirect2_blk_data = ospfs_block(indirect2_blk);
-	// 		memset(indirect_blk_data, 0, OSPFS_BLKSIZE);
-	// 	}
-	// 	else
-	// 	{
-	// 		indirect2_blk_data = ospfs_block(indirect2_blk);
-	// 	}
-	// 	indirect_blk = indirect2_blk_data[indirect_index];
-	// }
-
-	// //need to use indirect block
-	// if(indirect_index >= 0)
-	// {	
-	// 	//need to allocate indirect block
-	// 	if(indirect_blk == 0)
-	// 	{
-	// 		indirect_blk = allocate_block();
-	// 		if(!indirect_blk)
-	// 		{
-	// 			free_block(new_blk);
-	// 			if(indir2_blk_allocated)
-	// 				free_block(indirect2_blk);
-	// 			return -ENOSPC;
-	// 		}
-	// 		indirect_blk_data = ospfs_block(indirect_blk);
-	// 		memset(indirect_blk_data, 0, OSPFS_BLKSIZE);
-	// 	}
-	// 	else
-	// 	{
-	// 		indirect_blk_data = ospfs_block(indirect_blk);
-	// 	}
-	// }
-
-
-	// //if no indirects or indirect2s are needed
-	// if(indirect_index < 0 && indirect2_index != 0)
-	// 	oi->oi_direct[dir_index] = new_blk;
-	// else if(indirect2_blk != 0)
-	// {
-	// 	indirect_blk_data[dir_index] = new_blk;
-	// 	oi->oi_indirect = indirect_blk;
-	// }
-	// else
-	// {
-	// 	indirect_blk_data[dir_index] = new_blk;
-	// 	indirect2_blk_data[indirect_index] = indirect_blk;
-	// 	oi->oi_indirect2 = indirect2_blk;
-	// }
-
 	
 }
 
@@ -953,8 +857,68 @@ remove_block(ospfs_inode_t *oi)
 	// current number of blocks in file
 	uint32_t n = ospfs_size2nblocks(oi->oi_size);
 
-	/* EXERCISE: Your code here */
-	return -EIO; // Replace this line
+	if(n == 0)
+		return -EIO;
+	n--;
+
+	//if size of the file is 0 blocks
+	if(n == 0)
+		return 0;
+
+	int32_t dir_index = direct_index(n);
+	int32_t indirect_index = indir_index(n);
+	int32_t indirect2_index = indir2_index(n);
+
+	//1) if direct index is the only thing needed
+	if(indirect_index < 0)
+	{
+		free_block(oi->oi_direct[dir_index]);
+		oi->oi_direct[dir_index] = 0;
+	}
+
+	//2) if indirect index is needed to store the blocks of the inode in question but indirect2 is not needed
+	else if(indirect2_index < 0)
+	{
+		uint32_t* indir_blk_data = ospfs_block(oi->oi_indirect);
+
+		if(dir_index == 0)
+		{
+			free_block(indir_blk_data[dir_index]);
+			indir_blk_data[dir_index] = 0;
+			free_block(oi->oi_indirect);
+			oi->oi_indirect = 0;
+		}
+		else
+		{
+			free_block(indir_blk_data[dir_index]);
+			indir_blk_data[dir_index] = 0;
+		}
+
+	}
+
+	//3 if indirect2 is needed
+	else
+	{
+		uint32_t* indir2_blk_data = ospfs_block(oi->oi_indirect2);
+		uint32_t* indir_blk_data = ospfs_block(indir2_blk_data[indirect_index]);
+
+		free_block(indir_blk_data[dir_index]);
+		indir_blk_data[dir_index] = 0;
+		if(dir_index == 0)
+		{
+			free_block(indir2_blk_data[indirect_index]);
+			indir2_blk_data[indirect_index] = 0;
+		}
+		if(indirect_index == 0)
+		{
+			free_block(oi->oi_indirect2);
+			oi->oi_indirect2 = 0;
+		}
+	}
+
+	oi->oi_size = (n - 1) * (OSPFS_BLKSIZE);
+	return 0;
+
 }
 
 
