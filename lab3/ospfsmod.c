@@ -916,7 +916,7 @@ remove_block(ospfs_inode_t *oi)
 		}
 	}
 
-	oi->oi_size = (n - 1) * (OSPFS_BLKSIZE);
+	oi->oi_size = n * (OSPFS_BLKSIZE);
 	return 0;
 
 }
