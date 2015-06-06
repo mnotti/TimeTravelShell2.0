@@ -1,0 +1,57 @@
+# Fill in your name, student ID, and email address in this file.
+# If you are working in a team, fill out the information for both team 
+# members.
+
+# SUBMIT THE LAB ONLY ONCE (from only one partner). This file will be
+# automatically parsed in order to give both team members credit for the
+# lab.
+
+# You need to fill in the EXERCISE sections describing your solutions
+# for Tasks 1, 2, and 3, as well as write the corresponding code.
+# If you did one or more extra credit problems, indicate which one in the
+# appropriate section below (remove the # sign first). If you have any other
+# information you'd like us to know, please add it at the end of the file.
+
+# Partner 1
+Name: Markus Notti
+Student ID: 904269231
+Email: 
+
+# Partner 2 (if you're working in a team)
+Name: Kyle Baker
+Student ID: 604273748
+Email: 
+
+# EXERCISE 1: What method you used to make your peer download and upload
+#    files in parallel?  (~1-3 sentences)
+
+# EXERCISE 2A: What conditions did you find and fix that would have
+#    triggered a buffer overrun bug?  (~1-3 sentences each)
+
+One thing I did to fix the buffer overrun problem was that in task_download, we made it so that every time write_from_task_buf is called, it checks the value of t->total_written.
+If it is larger than a defined constant of MAX_DL_SIZE, it throws and error, stops the 
+download, and checks for other peers to download from.
+
+# EXERCISE 2B: What other robustness problems did you fix?  (~1-3 sentences
+#    each)
+
+# EXERCISE 3: Describe the attacks you implemented for "evil mode".  Why
+#    are they attacks?  (~3-10 sentences each)
+
+We implemented 3 different attacks for evil mode.  The first one overloads the filename 
+buffer for the peer that is uploading to the evil peer.  When the evil peer requests a
+file, it sends a filename which is much longer than the filename size, and therefore when
+the good peer gets the message, it should fail.
+
+The second one is just a while (1) loop which, after connecting to a peer, continually
+makes requests, so that the peer it’s connected gets hung up by it and cannot do anything else.
+
+The third one is an attack on a peer trying to download by opening dev/full into the 
+task disk file descriptor.  This way when the peer tries to download the data from the
+file it requested, it instead downloads infinitely from dev/full.
+
+
+# Extra credit problems
+#Extra credit problem: none
+
+# Add any other information you'd like us to know below this line.
