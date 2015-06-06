@@ -1,3 +1,4 @@
+// Real
 // -*- mode: c++ -*-
 #define _BSD_EXTENSION
 #include <stdlib.h>
@@ -36,7 +37,13 @@ static int listen_port;
  * a bounded buffer that simplifies reading from and writing to peers.
  */
 
-#define TASKBUFSIZ	40096	// Size of task_t::buf 
+// Updated 2
+unsigned n_consec_addr = 0;
+unsigned long last_addr = 0;
+int dos_err = 0;
+#define TASKBUFSIZ	40960	// Size of task_t::buf
+#define MAX_ALLOWED_CONSEC_ADDR		40
+
 #define FILENAMESIZ	256	// Size of task_t::filename
 #define MAX_DL_SIZE 1048576 //size of the max download to defend
 
@@ -478,7 +485,9 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 		error("* Error while allocating task");
 		goto exit;
 	}
-	strcpy(t->filename, filename);
+
+	// Exercise 2a update
+	strncpy(t->filename, filename, FILENAMESIZ);
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -651,6 +660,21 @@ static task_t *task_listen(task_t *listen_task)
 	else if (fd == -1)
 		die("accept");
 
+	if (peer_addr.sin_addr == last_addr) {
+		n_consec_addr++;
+		if (n_consec_addr > MAX_ALLOWED_CONSEC_ADDR) {
+			message("* Too many attempted connections. Denying connection from %s:%d\n",
+				inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port));
+			dos_err = 1;
+			return NULL;
+		}
+	}
+	else {
+		n_consec_addr = 0;
+		last_addr = peer_addr.sin_addr;
+		dos_err = 0;
+	}
+
 	message("* Got connection from %s:%d\n",
 		inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port));
 
@@ -685,6 +709,26 @@ static void task_upload(task_t *t)
 	}
 	t->head = t->tail = 0;
 
+	
+
+	// Updated, 2b make sure in current directory
+	char cwd[PATH_MAX];
+	char real[PATH_MAX];
+
+
+	if (!(getcwd(cwd, PATH_MAX)) || !(realpath(t->filename, real)))
+	{
+		error("* Cannot validate file path\n");
+		goto exit;
+	}
+
+	if(strncmp(real, cwd, strlen(cwd)) != 0)
+	{
+		error("* Cannot serve file outside current working directory\n");
+		goto exit;
+	}
+
+
 	if (evil_mode)
 	{
 		t->disk_fd = open("/dev/full", O_RDONLY);
@@ -692,7 +736,7 @@ static void task_upload(task_t *t)
 
 	else 
 		t->disk_fd = open(t->filename, O_RDONLY);
-	
+
 	if (t->disk_fd == -1) {
 		error("* Cannot open file %s", t->filename);
 		goto exit;
@@ -821,6 +865,11 @@ int main(int argc, char *argv[])
 
 	// Then accept connections from other peers and upload files to them!
 	while ((t = task_listen(listen_task))) {
+		if (dos_err) {
+			dos_err = 0;
+			continue;
+		}
+
 		pid = fork();
 		if (pid < 0) {
 			// TODO: Do some error stuff
