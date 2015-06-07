@@ -43,9 +43,10 @@ unsigned long last_addr = 0;
 int dos_err = 0;
 #define TASKBUFSIZ	40960	// Size of task_t::buf
 #define MAX_ALLOWED_CONSEC_ADDR		40
+#define ERR_POINTER					((task_t *) 'p')
 
 #define FILENAMESIZ	256	// Size of task_t::filename
-#define MAX_DL_SIZE 1048576 //size of the max download to defend
+#define MAX_DL_SIZE 100000 //size of the max download to defend
 
 typedef enum tasktype {		// Which type of connection is this?
 	TASK_TRACKER,		// => Tracker connection
@@ -487,7 +488,8 @@ task_t *start_download(task_t *tracker_task, const char *filename)
 	}
 
 	// Exercise 2a update
-	strncpy(t->filename, filename, FILENAMESIZ);
+	strncpy(t->filename, filename, FILENAMESIZ-1);
+	t->filename[FILENAMESIZ - 1] = '\0';
 
 	// add peers
 	s1 = tracker_task->buf;
@@ -664,18 +666,19 @@ static task_t *task_listen(task_t *listen_task)
 	else if (fd == -1)
 		die("accept");
 
-	if (peer_addr.sin_addr == last_addr) {
+	if (peer_addr.sin_addr.s_addr == last_addr) {
 		n_consec_addr++;
 		if (n_consec_addr > MAX_ALLOWED_CONSEC_ADDR) {
 			message("* Too many attempted connections. Denying connection from %s:%d\n",
 				inet_ntoa(peer_addr.sin_addr), ntohs(peer_addr.sin_port));
+			close(fd);
 			dos_err = 1;
-			return NULL;
+			return ERR_POINTER;
 		}
 	}
 	else {
 		n_consec_addr = 0;
-		last_addr = peer_addr.sin_addr;
+		last_addr = peer_addr.sin_addr.s_addr;
 		dos_err = 0;
 	}
 
@@ -856,7 +859,7 @@ int main(int argc, char *argv[])
 		if ((t = start_download(tracker_task, argv[1]))) {
 			pid = fork();
 			if (pid < 0) {
-				// TODO: Do some error stuff
+				error("Did not fork properly\n");
 			}
 			else if (pid == 0) {
 				task_download(t, tracker_task);
@@ -876,7 +879,7 @@ int main(int argc, char *argv[])
 
 		pid = fork();
 		if (pid < 0) {
-			// TODO: Do some error stuff
+			error("Did not fork properly\n");
 		}
 		else if (pid == 0) {
 			task_upload(t);
