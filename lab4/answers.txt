@@ -34,6 +34,7 @@ children to finish. After all the children finished, we forked again and each ch
 One thing I did to fix the buffer overrun problem was that in task_download, we made it so that every time write_from_task_buf is called, it checks the value of t->total_written.
 If it is larger than a defined constant of MAX_DL_SIZE, it throws and error, stops the 
 download, and checks for other peers to download from.
+(the code implementing this is found in lines 613-617)
 
 Another potential buffer overrun we fixed was if the filename requested was too large. We fixed this by using strncpy
 to set a max size of the string to copy instead of strcpy. This was in start_download.
@@ -62,14 +63,19 @@ We implemented 3 different attacks for evil mode.  The first one overloads the f
 buffer for the peer that is uploading to the evil peer.  When the evil peer requests a
 file, it sends a filename which is much longer than the filename size, and therefore when
 the good peer gets the message, it should fail.
+(the code for implementing this attack is in lines 543-559)
 
 The second one is just a while (1) loop which, after connecting to a peer, continually
-makes requests, so that the peer it’s connected gets hung up by it and cannot do anything else.
+connects and requests, so that the peer it’s connected gets hung up by it and cannot do anything else. It starts by simply entering the while loop.  In the loop, it calls open_socket on the good peer, opening a new connection with it.  Then it sends a request, forcing the good peer to deal with it.  This keeps the good peer occupied and busy so
+it can’t service other peers.
+(the code for implementing this attack is in lines 563-572)
 
 The third one is an attack on a peer trying to download by opening dev/full into the 
 task disk file descriptor.  This way when the peer tries to download the data from the
-file it requested, it instead downloads infinitely from dev/full.
-
+file it requested, it instead downloads infinitely from dev/full.  So instead of 
+downloading the file requested, it continuously and indefinitely downloads random
+data from dev/full.
+(the code for implementing this attack is in lines 738-741)
 
 # Extra credit problems
 #Extra credit problem: none
