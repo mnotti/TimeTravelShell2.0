@@ -36,7 +36,7 @@ If it is larger than a defined constant of MAX_DL_SIZE, it throws and error, sto
 download, and checks for other peers to download from.
 
 Another potential buffer overrun we fixed was if the filename requested was too large. We fixed this by using strncpy
-to set a max size of the string to copy instead of strcpy.
+to set a max size of the string to copy instead of strcpy. This was in start_download.
 
 # EXERCISE 2B: What other robustness problems did you fix?  (~1-3 sentences
 #    each)
@@ -48,7 +48,12 @@ more than that
 
 We also protected against someone trying to send too many connections. We counted
 how many connections were coming from a single source and limited them to a max
-number of consecuative connections and denied service after that.
+number of consecuative connections and denied service after that. This code is
+in lines 668-682.
+
+Lastly, we also made sure the file served was in the current working directory
+and not outside of it or anywhere else. We did this by comparing the 
+file path to the current working directory. This code was in lines 720-735.
 
 # EXERCISE 3: Describe the attacks you implemented for "evil mode".  Why
 #    are they attacks?  (~3-10 sentences each)

@@ -1,4 +1,3 @@
-// Real
 // -*- mode: c++ -*-
 #define _BSD_EXTENSION
 #include <stdlib.h>
